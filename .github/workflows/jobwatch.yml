@@ -29,14 +29,22 @@ jobs:
           pip install -r requirements.txt
           python -m playwright install --with-deps chromium
 
-      # state.json (which jobs were already seen) is kept in the Actions cache,
-      # not in the public repo
+      # Saved state (which jobs were already seen + the last 30 days of alerts) lives in the
+      # Actions cache. The very first time, start from the copy taken from the PC (seed/).
       - name: Restore saved state
+        id: state
         uses: actions/cache/restore@v4
         with:
-          path: state.json
-          key: jobwatch-state-${{ github.run_id }}
-          restore-keys: jobwatch-state-
+          path: |
+            state.json
+            new-jobs.json
+            new-jobs.html
+          key: jobwatch-state-v2-${{ github.run_id }}
+          restore-keys: jobwatch-state-v2-
+
+      - name: First cloud run - start from the PC's state
+        if: steps.state.outputs.cache-matched-key == ''
+        run: cp seed/state.json seed/new-jobs.json seed/new-jobs.html .
 
       - name: Check all companies
         env:
@@ -52,8 +60,11 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: state.json
-          key: jobwatch-state-${{ github.run_id }}
+          path: |
+            state.json
+            new-jobs.json
+            new-jobs.html
+          key: jobwatch-state-v2-${{ github.run_id }}
 
       - name: Keep the job list from this run
         if: always()
