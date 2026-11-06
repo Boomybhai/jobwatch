@@ -1263,3 +1263,19 @@ def test_companies_that_never_had_jobs_are_rebaselined_once(tmp_path, monkeypatc
     assert emails == []                               # old job found by the fix: recorded quietly
     data = json.loads(state.read_text())
     assert data["migrations"]["rebaseline_empty_2026_11"] and data["companies"]["Acme"]["seen"]
+
+
+def test_join_us_job_links_are_recognised():
+    from jobwatch.adapters import parse_html_jobs
+    html = ('<a href="/join-us/energy-portfolio-specialist/">Energy Portfolio Specialist</a>'
+            '<a href="/join-us/?page=2">Next page</a><a href="/join-us/apply-spontaneous/">Spontaneous application</a>')
+    urls = [j.url for j in parse_html_jobs(html, "https://www.huvepharma.com/join-us/", "Huvepharma")]
+    assert "https://www.huvepharma.com/join-us/energy-portfolio-specialist/" in urls
+    assert not any("page=2" in u for u in urls)
+
+
+def test_job_links_with_trailing_slash_are_recognised():
+    from jobwatch.adapters import parse_html_jobs
+    html = '<a href="/careers/senior-ehs-specialist/">Senior EHS Specialist</a>'
+    assert [j.url for j in parse_html_jobs(html, "https://www.iqatalyst.com/careers/", "IQatalyst")] == \
+        ["https://www.iqatalyst.com/careers/senior-ehs-specialist/"]
