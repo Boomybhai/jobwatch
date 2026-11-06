@@ -1221,3 +1221,45 @@ def test_resolve_rediscovers_only_companies_without_jobs():
     empty = {"seen": {}, "discovered": dict(old)}
     f = SiteFetcher({"https://acme.com/careers": '<a href="/vacature/12/process-engineer">Process engineer</a>'})
     assert resolve(f, c, empty).url == "https://acme.com/careers"                       # looked again
+
+
+def test_fix_encoding_reads_utf8_sitemap_without_charset():
+    import requests
+    from jobwatch.fetch import _fix_encoding
+    from jobwatch.discover import _sitemap_urls
+    r = requests.Response()
+    r._content = ("﻿<?xml version='1.0' encoding='utf-8'?><urlset><url><loc>https://x.com/job/a/1</loc></url>"
+                  "</urlset>").encode("utf-8")
+    r.headers["Content-Type"] = "text/xml"
+    r.encoding = "ISO-8859-1"          # what requests guesses for text/* without a charset
+    assert _sitemap_urls(r.text)[1] == []
+    _fix_encoding(r)
+    assert _sitemap_urls(r.text)[1] == ["https://x.com/job/a/1"]
+    r2 = requests.Response()
+    r2._content = "Procesoperator Zeeländ".encode("utf-8")
+    r2.headers["Content-Type"] = "text/html"
+    _fix_encoding(r2)
+    assert r2.text == "Procesoperator Zeeländ"
+    r3 = requests.Response()
+    r3._content = "café".encode("latin-1")
+    r3.headers["Content-Type"] = "text/html"
+    r3.encoding = "ISO-8859-1"
+    _fix_encoding(r3)
+    assert r3.text == "café"           # real Latin-1 pages are left alone
+
+
+def test_companies_that_never_had_jobs_are_rebaselined_once(tmp_path, monkeypatch):
+    companies = tmp_path / "companies.csv"
+    companies.write_text("name,priority,group,url,enabled,adapter,render,link_type,note\n"
+                         "Acme,High,Chemicals,https://acme.nl/vacatures,yes,html,never,Careers page,\n", encoding="utf-8")
+    state = tmp_path / "state.json"
+    state.write_text(json.dumps({"companies": {"Acme": {"seen": {}, "baselined": True}}, "runs": 5}), encoding="utf-8")
+    page = '<a href="/vacatures/junior-chemical-engineer-9">Junior Chemical Engineer</a>'
+    monkeypatch.setattr("jobwatch.fetch.Fetcher.get",
+                        lambda self, url, **kw: type("R", (), {"text": page, "url": url})())
+    emails = []
+    monkeypatch.setattr(notify, "send_email", lambda *a: emails.append(a) or True)
+    assert main(["run", "--companies", str(companies), "--state", str(state), "--no-render"]) == 0
+    assert emails == []                               # old job found by the fix: recorded quietly
+    data = json.loads(state.read_text())
+    assert data["migrations"]["rebaseline_empty_2026_11"] and data["companies"]["Acme"]["seen"]

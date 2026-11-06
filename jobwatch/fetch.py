@@ -76,6 +76,7 @@ class Fetcher:
             self._wait()
             resp = self.session.get(url, timeout=self.settings.timeout_seconds, headers=headers, **kw)
         resp.raise_for_status()
+        _fix_encoding(resp)
         return resp
 
     def post_json(self, url: str, payload: dict) -> dict:
@@ -147,3 +148,26 @@ class Fetcher:
         if self._pw is not None:
             self._pw.stop()
             self._pw = None
+
+
+def _fix_encoding(resp: requests.Response) -> None:
+    """Decode pages that don't name their charset as UTF-8 when they are UTF-8.
+
+    Without a charset in Content-Type, requests falls back to ISO-8859-1 for text/*.
+    That turns a UTF-8 byte-order mark into 'ï»¿' (so XML sitemaps parse as empty -
+    Radancy/TalentBrew job sitemaps all start with one) and mangles é, ë, ü in titles.
+    """
+    ctype = resp.headers.get("Content-Type", "").lower()
+    if "charset=" in ctype:
+        return
+    body = resp.content[:200000]
+    if body.startswith(b"\xef\xbb\xbf"):
+        resp.encoding = "utf-8-sig"
+        return
+    try:
+        body.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        cut_off = len(body) == 200000 and exc.start >= len(body) - 4  # a character split at the 200 kB cut
+        if not cut_off:
+            return  # really not UTF-8 (e.g. Latin-1): leave it as it is
+    resp.encoding = "utf-8"

@@ -33,6 +33,14 @@ def run(args: argparse.Namespace) -> int:
         companies = [c for c in companies if wanted in c.name.lower()]
     state = State(args.state)
     run_no = state.bump_run()
+    # one-off (Nov 2026): fixes in discovery/encoding make companies that never produced a job
+    # suddenly list everything they have - record those quietly once instead of alerting for all
+    migrations = state.data.setdefault("migrations", {})
+    if not migrations.get("rebaseline_empty_2026_11"):
+        for entry in state.data.get("companies", {}).values():
+            if not entry.get("seen"):
+                entry["baselined"] = False
+        migrations["rebaseline_empty_2026_11"] = True
     fetcher = Fetcher(settings, allow_render=not args.no_render)
 
     new_relevant: list[Job] = []
