@@ -1279,3 +1279,19 @@ def test_job_links_with_trailing_slash_are_recognised():
     html = '<a href="/careers/senior-ehs-specialist/">Senior EHS Specialist</a>'
     assert [j.url for j in parse_html_jobs(html, "https://www.iqatalyst.com/careers/", "IQatalyst")] == \
         ["https://www.iqatalyst.com/careers/senior-ehs-specialist/"]
+
+
+def test_ashby_board_is_read_from_posting_api():
+    from jobwatch.adapters import check_company, detect_adapter
+    from jobwatch.discover import find_ats_links
+    assert detect_adapter("https://jobs.ashbyhq.com/skynrg") == "ashby"
+    assert find_ats_links('<a href="https://jobs.ashbyhq.com/skynrg/?ashby_jid=9e6f">HSE</a>') == \
+        ("ashby", "https://jobs.ashbyhq.com/skynrg")
+    api = {"https://api.ashbyhq.com/posting-api/job-board/skynrg?includeCompensation=false": {"jobs": [
+        {"id": "9e6f", "title": "HSE Specialist | DSL-01", "location": "Delfzijl", "isListed": True,
+         "jobUrl": "https://jobs.ashbyhq.com/skynrg/9e6f", "publishedAt": "2026-11-01T10:00:00Z",
+         "address": {"postalAddress": {"addressCountry": "Netherlands"}}},
+        {"id": "x", "title": "Hidden", "isListed": False}]}}
+    res = check_company(SiteFetcher({}, api), Company("SkyNRG", "https://jobs.ashbyhq.com/skynrg"))
+    assert res.method == "ashby" and [j.title for j in res.jobs] == ["HSE Specialist | DSL-01"]
+    assert res.jobs[0].location == "Delfzijl; Netherlands"

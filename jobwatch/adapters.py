@@ -44,6 +44,8 @@ def detect_adapter(url: str) -> str:
         return "oracle"
     if host.endswith(".eightfold.ai"):
         return "eightfold"
+    if host == "jobs.ashbyhq.com":
+        return "ashby"
     if urlsplit(url).path.lower().endswith(".xml") and "sitemap" in url.lower():
         return "sitemap"
     return "html"
@@ -127,6 +129,31 @@ def fetch_recruitee(f: Fetcher, company: Company) -> list[Job]:
         )
         for o in data.get("offers", [])
     ]
+
+
+# -------------------------------------------------------------------- Ashby
+def fetch_ashby(f: Fetcher, company: Company) -> list[Job]:
+    """jobs.ashbyhq.com/<board> - the page is built with JavaScript, the public posting API isn't."""
+    segs = [s for s in urlsplit(company.url).path.split("/") if s]
+    if not segs:
+        raise ValueError(f"Ashby URL needs the board name: {company.url}")
+    data = f.get_json(f"https://api.ashbyhq.com/posting-api/job-board/{segs[0]}?includeCompensation=false")
+    jobs = []
+    for p in data.get("jobs", []):
+        if p.get("isListed") is False:
+            continue
+        locs = [p.get("location") or ""] + [(x.get("location") or "") for x in p.get("secondaryLocations") or []]
+        addr = ((p.get("address") or {}).get("postalAddress") or {})
+        country = addr.get("addressCountry") or ""
+        jobs.append(Job(
+            company=company.name,
+            title=(p.get("title") or "").strip(),
+            url=p.get("jobUrl") or f"https://jobs.ashbyhq.com/{segs[0]}/{p.get('id')}",
+            location="; ".join(x for x in locs + [country] if x),
+            posted=p.get("publishedAt") or "",
+            id=str(p.get("id") or p.get("jobUrl")),
+        ))
+    return jobs
 
 
 # ---------------------------------------------------------- SmartRecruiters
@@ -581,6 +608,8 @@ def check_company(f: Fetcher, company: Company, max_jobs: int = 200) -> CheckRes
             return CheckResult(company, fetch_successfactors(f, company, max_jobs), method=adapter)
         if adapter == "eightfold":
             return CheckResult(company, fetch_eightfold(f, company, max_jobs), method=adapter)
+        if adapter == "ashby":
+            return CheckResult(company, fetch_ashby(f, company), method=adapter)
         if adapter == "sitemap":
             return CheckResult(company, fetch_sitemap(f, company), method=adapter)
         jobs, method = fetch_html(f, company)

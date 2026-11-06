@@ -27,7 +27,7 @@ from .models import Company
 log = logging.getLogger(__name__)
 
 API_ADAPTERS = ("workday", "greenhouse", "lever", "recruitee", "smartrecruiters", "workable", "personio",
-                "oracle", "successfactors", "eightfold")
+                "oracle", "successfactors", "eightfold", "ashby")
 
 # (adapter, regex) - each regex captures a canonical feed URL in group 1
 ATS_PATTERNS = [
@@ -41,6 +41,7 @@ ATS_PATTERNS = [
     ("smartrecruiters", re.compile(r"https?://api\.smartrecruiters\.com/v1/companies/([A-Za-z0-9_-]+)")),
     ("smartrecruiters", re.compile(r"https?://(?:careers|jobs)\.smartrecruiters\.com/([A-Za-z0-9_-]+)")),
     ("workable", re.compile(r"https?://apply\.workable\.com/([A-Za-z0-9_-]+)")),
+    ("ashby", re.compile(r"(https?://jobs\.ashbyhq\.com/[A-Za-z0-9_.%-]+)")),
     ("personio", re.compile(r"(https?://[a-z0-9-]+\.jobs\.personio\.(?:de|com))")),
     ("eightfold", re.compile(r"(https?://[a-z0-9-]+\.eightfold\.ai/careers\?domain=[A-Za-z0-9.-]+)")),
     ("oracle", re.compile(
@@ -79,7 +80,7 @@ def find_ats_links(html: str) -> tuple[str, str] | None:
         for m in rx.finditer(html):
             key = m.group(1)
             last = key.rstrip("/").rsplit("/", 1)[-1]
-            if adapter not in ("recruitee", "personio", "workday", "oracle", "eightfold") and last.lower() in NOT_A_BOARD:
+            if adapter not in ("recruitee", "personio", "workday", "oracle", "eightfold", "ashby") and last.lower() in NOT_A_BOARD:
                 continue
             counts[(adapter, canonical_feed(adapter, key))] += 1
     if not counts:
