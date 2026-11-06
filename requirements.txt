@@ -1,0 +1,8 @@
+requests>=2.31
+beautifulsoup4>=4.12
+lxml>=5.0
+PyYAML>=6.0
+# Optional: renders JavaScript-heavy careers pages (run `playwright install chromium` after installing)
+playwright>=1.44
+# Optional: desktop pop-ups when running on your own computer
+plyer>=2.1

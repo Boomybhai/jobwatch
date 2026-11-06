@@ -1,0 +1,30 @@
+jobwatch for Windows
+====================
+
+What's in this folder
+  jobwatch.exe             Double-click to check all careers pages now (a window shows progress).
+  jobwatch-background.exe  The same thing without a window. The scheduled task uses this one.
+  companies.csv            The companies to watch. Open in Excel to add/remove/disable rows.
+  config.yaml              Which job titles count (open with Notepad).
+  email.env.example        Rename to email.env and fill in to also get emails.
+
+First time
+  1. Double-click jobwatch.exe. The first run only remembers the jobs that are
+     already online, so you won't get alerts yet. It takes 5-15 minutes.
+  2. Open Command Prompt in this folder (type  cmd  in the folder's address bar)
+     and run:
+         jobwatch.exe install-task
+     From now on it checks every 3 hours while you're logged in and shows a
+     Windows notification when a relevant new job appears.
+     Different interval:  jobwatch.exe install-task --every-hours 6
+     To stop:             jobwatch.exe uninstall-task
+
+Good to know
+  - Keep all these files in the same folder. state.json (what's been seen) and
+    jobwatch.log (what the background runs did) are created here.
+  - Windows may show "Windows protected your PC" the first time, because the
+    .exe isn't code-signed. Click "More info" -> "Run anyway".
+  - JavaScript-heavy careers pages are opened with the Microsoft Edge that's
+    already on your PC (hidden). Nothing extra to install.
+  - Try one company only:  jobwatch.exe run --only "asml" --dry-run -v
+  - Test the email:        jobwatch.exe test-email

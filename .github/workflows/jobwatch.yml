@@ -1,0 +1,67 @@
+# Runs jobwatch in the cloud every 3 hours, so it works while your PC is off.
+# Secrets (repo Settings -> Secrets and variables -> Actions):
+#   NTFY_TOPIC (phone alerts), optional SMTP_USER, SMTP_PASSWORD, EMAIL_TO (email alerts)
+name: jobwatch
+
+on:
+  schedule:
+    - cron: "1 */3 * * *"      # every 3 hours at :01 (UTC; GitHub may start a few minutes late)
+  workflow_dispatch:            # "Run workflow" button for a check right now
+
+concurrency:
+  group: jobwatch
+  cancel-in-progress: false    # never two runs at once
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install jobwatch
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      # state.json (which jobs were already seen) is kept in the Actions cache,
+      # not in the public repo
+      - name: Restore saved state
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: jobwatch-state-${{ github.run_id }}
+          restore-keys: jobwatch-state-
+
+      - name: Check all companies
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        run: python -m jobwatch run --notify phone,email
+
+      - name: Save state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: jobwatch-state-${{ github.run_id }}
+
+      - name: Keep the job list from this run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-jobs
+          path: |
+            new-jobs.html
+            new-jobs.json
+          if-no-files-found: ignore
+          retention-days: 30

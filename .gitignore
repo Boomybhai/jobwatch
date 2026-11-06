@@ -1,0 +1,17 @@
+# private / machine-specific
+email.env
+state.json
+new-jobs.html
+new-jobs.json
+jobwatch.log
+test_run_log.txt
+# Windows build output and backups
+*.exe
+dist/
+build/
+*.spec
+backup-*/
+_to_delete/
+*.bak-*
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,1060 @@
+# jobwatch settings. Open with Notepad, edit, save (Ctrl+S). Takes effect on the next run.
+# Rules: keep the 2 spaces + dash in front of each word ("  - word"). Never use the Tab key.
+# Matching ignores upper/lower case and looks at the job TITLE.
+
+# ---------------------------------------------------------------- 1. TITLE
+# A posting is considered if its title contains at least ONE of these words...
+include_keywords:
+  - chemical engineer
+  - chemical engineering
+  - process engineer
+  - process engineering
+  - process technologist
+  - procestechnoloog
+  - procesingenieur
+  - proceskundige
+  - chemical
+  - chemie
+  - chemist
+  - engineer
+  - engineering
+  - ingenieur
+  - technologist
+  - graduate
+  - trainee
+  - traineeship
+  - young professional
+  - starter
+  - junior
+  - entry level
+  - hse
+  - process safety
+  - safety engineer
+  - sustainability
+  - production engineer
+  - project engineer
+  - r&d
+  - scientist
+
+  # Fields a chemical engineering degree leads into (added Nov 2026)
+  # Production / manufacturing
+  - production
+  - productie
+  - manufacturing
+  - manufacturing engineer
+  # Quality
+  - quality
+  - quality engineer
+  - kwaliteit
+  - qa
+  - qc
+  # Continuous improvement
+  - continuous improvement
+  - procesverbetering
+  - lean
+  - six sigma
+  # Packaging
+  - packaging
+  - verpakking
+  # Food & beverage
+  - food
+  - beverage
+  - levensmiddelen
+  - voedingsmiddelen
+  # Plastics & polymers
+  - polymer
+  - polymers
+  - plastics
+  - kunststof
+  # Energy
+  - energy
+  - energie
+  # Water treatment
+  - water
+  - wastewater
+  - water treatment
+  - afvalwater
+  - waterbehandeling
+  - waterzuivering
+  # Pharmaceutical manufacturing
+  - pharma
+  - pharmaceutical
+  - farmaceutisch
+  - gmp
+  - validation
+  # Technical sales
+  - technical sales
+  - sales engineer
+  - technisch commercieel
+  # Operations
+  - operations
+  # Supply chain
+  - supply chain
+  # Data & analytics
+  - data analyst
+  - data scientist
+  - data engineer
+  - analytics
+
+  # field words (must also be listed here)
+  - chemicus
+  - process
+  - procestechniek
+  - procestechnologie
+  - plant engineer
+  - kwaliteitsingenieur
+  - food technologist
+  - food technology
+  - levensmiddelentechnoloog
+  - levensmiddelentechnologie
+  - brewing
+  - kunststoffen
+  - materials engineer
+  - materials scientist
+  - membrane
+  - energy engineer
+  - energy transition
+  - energietransitie
+  - hydrogen
+  - waterstof
+  - electrolyser
+  - electrolysis
+  - waste water
+  - water technology
+  - watertechnologie
+  - desalination
+  - environmental engineer
+  - milieukundige
+  - validation engineer
+  - veiligheidskundige
+  - operations engineer
+  - operations development
+  - r&d engineer
+  - refinery
+  - raffinaderij
+  - petrochemical
+  - petrochemie
+  - graduate program
+  - graduate programme
+  - young graduate
+  - sustainability engineer
+  # Dutch compound words (added 2026-11-04 after a missed Tata Steel procesveiligheid job)
+  - procesveiligheid
+  - procesveiligheidsspecialist
+  - procesveiligheidskundige
+  - technoloog
+  - circulaire
+  - circulair
+  - circular economy
+  - grondstoffen
+# ...and NONE of these words.
+exclude_keywords:
+  - senior
+  - medior
+  - sr.
+  - lead
+  - principal
+  - manager
+  - director
+  - head of
+  - intern
+  - internship
+  - stage
+  - stagiair
+  - afstudeer
+  - afstudeeropdracht
+  - working student
+  - werkstudent
+  - operator
+  - monteur
+  - technician
+  - mechanic
+  - chauffeur
+  - driver
+  - software
+  - developer
+  - business process
+  - student
+  - apprentice
+  - apprenticeship
+  - alternance
+  - lehrstelle
+  - technicien
+  - staff
+
+# ---------------------------------------------------------- LANGUAGE
+# true = drop jobs whose description clearly demands fluent / native Dutch
+# ("fluent Dutch", "Dutch is required", "C1", "vloeiend Nederlands",
+# "uitstekende beheersing van de Nederlandse taal", "in woord en geschrift").
+# Jobs that accept basic or intermediate Dutch (A1-B2), only prefer it
+# ("Dutch is a plus", "Nederlands is een pre") or don't mention it are kept;
+# those that accept basic Dutch are marked "basic Dutch OK" in the alert.
+skip_if_fluent_dutch_required: true
+
+# ---------------------------------------------------------- 2. FAVOURITES
+# FIELD WORDS. With only_favourites: true (below) a posting must contain at least
+# one of these - a generic word like 'engineer', 'junior' or 'trainee' alone is not enough.
+# Add a word here (and keep it in section 1) to let a new field through.
+favourite_keywords:
+  - chemical engineer
+  - chemical engineering
+  - chemical
+  - chemie
+  - chemist
+  - chemicus
+  - process engineer
+  - process engineering
+  - process technologist
+  - process
+  - procestechnoloog
+  - procesingenieur
+  - proceskundige
+  - procestechniek
+  - procestechnologie
+  - plant engineer
+  - production engineer
+  - manufacturing engineer
+  - quality engineer
+  - kwaliteitsingenieur
+  - continuous improvement
+  - procesverbetering
+  - lean
+  - six sigma
+  - packaging
+  - verpakking
+  - food technologist
+  - food technology
+  - levensmiddelentechnoloog
+  - levensmiddelentechnologie
+  - beverage
+  - brewing
+  - polymer
+  - polymers
+  - plastics
+  - kunststof
+  - kunststoffen
+  - materials engineer
+  - materials scientist
+  - membrane
+  - energy engineer
+  - energy transition
+  - energietransitie
+  - hydrogen
+  - waterstof
+  - electrolyser
+  - electrolysis
+  - water treatment
+  - wastewater
+  - waste water
+  - afvalwater
+  - waterbehandeling
+  - waterzuivering
+  - water technology
+  - watertechnologie
+  - desalination
+  - environmental engineer
+  - milieukundige
+  - pharmaceutical
+  - pharma
+  - farmaceutisch
+  - gmp
+  - validation engineer
+  - hse
+  - process safety
+  - safety engineer
+  - veiligheidskundige
+  - technical sales
+  - sales engineer
+  - technisch commercieel
+  - supply chain
+  - operations engineer
+  - operations development
+  - data analyst
+  - r&d engineer
+  - refinery
+  - raffinaderij
+  - petrochemical
+  - petrochemie
+  - graduate program
+  - graduate programme
+  - young graduate
+  - traineeship
+  - sustainability engineer
+  # Dutch compound words (added 2026-11-04 after a missed Tata Steel procesveiligheid job)
+  - procesveiligheid
+  - procesveiligheidsspecialist
+  - procesveiligheidskundige
+  - technoloog
+  - circulaire
+  - circulair
+  - circular economy
+  - grondstoffen
+
+# true  = ONLY alert on favourites (chemical / process engineering titles)
+# false = alert on everything that passes section 1, favourites starred and listed first
+only_favourites: true
+
+# Jobs with a GENERIC title ("Engineer", "Junior ...", "Trainee") don't contain a field
+# word, but may still be open to chemical engineers. With check_description: true,
+# jobwatch reads their job description and keeps them only if it mentions one of the
+# phrases below (usually in the "your profile / requirements" part). The phrase that
+# matched is shown in the alert ("description: chemical engineering").
+# false = drop every generic title without reading its description.
+check_description: true
+description_keywords:
+  - chemical engineering
+  - chemical engineer
+  - chemical technology
+  - chemical process engineering
+  - chemische technologie
+  - chemische procestechnologie
+  - scheikundige technologie
+  - process engineering
+  - process technology
+  - process engineer
+  - procestechnologie
+  - procestechniek
+  - procestechnoloog
+  - procesingenieur
+  - degree in chemistry
+  - chemistry degree
+  - msc chemistry
+  - bsc chemistry
+  - msc in chemistry
+  - bsc in chemistry
+  - chemistry or
+  - or chemistry
+  - chemistry and
+  - and chemistry
+  - opleiding chemie
+  - hbo chemie
+  - wo chemie
+  - chemie of
+  - of chemie
+  - scheikunde
+  - biochemical engineering
+  - bioprocess engineering
+  - bioprocess technology
+  - biotechnology or chemical
+  - environmental engineering
+  - environmental technology
+  - milieutechnologie
+  - water technology
+  - watertechnologie
+  - food technology
+  - levensmiddelentechnologie
+  - molecular science
+  - life science & technology
+  - materials science
+  - materials engineering
+  - materiaalkunde
+  - polymer science
+  - polymer chemistry
+  - process safety
+  - procesveiligheid
+  # --- open to ALL engineering / technical backgrounds ---
+  - any engineering discipline
+  - all engineering disciplines
+  - any engineering background
+  - all engineering backgrounds
+  - any engineering degree
+  - an engineering degree
+  - degree in engineering
+  - engineering background
+  - engineering or science
+  - science or engineering
+  - engineering, science
+  - stem degree
+  - stem background
+  - stem field
+  - any technical degree
+  - a technical degree
+  - technical degree
+  - technical background
+  - technical education
+  - technical bachelor
+  - technical master
+  - technical university
+  - bsc or msc in a technical
+  - master's degree in a technical
+  - bachelor's degree in a technical
+  - technische opleiding
+  - technische achtergrond
+  - technische studie
+  - technisch georiënteerde
+  - technische universiteit
+  - bèta
+  - beta-opleiding
+  - bètastudie
+  - betastudie
+  - bèta/technische
+  - beta/technische
+  - alle technische richtingen
+  - welke technische richting
+  - ongeacht je technische
+  - any discipline
+# --------------------------------------------------------- 3. EXPERIENCE
+# For every new posting that passes the title check, jobwatch opens the job
+# description and looks for how many years of experience it asks for
+# ("0-2 years", "2-4 years", "at least 3 years", "minimaal 3 jaar ervaring", ...).
+# Ranges count by their lower number: "3-5 years" counts as 3.
+check_experience: true
+
+# Keep postings that ask for at most this many years.
+#   2 -> only 0-2 years      3 -> up to 0-3 years
+#   4 -> up to 0-4 years     5 -> up to 0-5 years
+max_years_experience: 2
+
+# Many postings don't mention years at all.
+# true = still alert (recommended)   false = skip them
+keep_if_experience_unknown: true
+
+# ------------------------------------------------------------ 4. LOCATION
+# Wanted: the Netherlands and Belgium. Everything else is dropped.
+# jobwatch looks for a place in: the location the careers site gives, the job
+# title, the job link, and - if still unclear - the job page itself (a posting
+# written in Dutch counts as NL/BE).
+#   1. a wanted place below is found                -> keep
+#   2. a foreign place below is found (and no wanted one) -> drop
+#   3. still no idea where the job is:
+#        keep_unmatched_locations: false -> drop  (no more US / China jobs)
+#        keep_unmatched_locations: true  -> keep  (nothing missed, more noise)
+# To add a country: put its name and main cities under location_keywords and
+# remove them from foreign_location_keywords.
+keep_unmatched_locations: false
+
+location_keywords:
+  # Netherlands
+  - netherlands
+  - nederland
+  - the netherlands
+  - nl
+  - nld
+  - holland
+  - north brabant
+  - noord-brabant
+  - limburg
+  - zeeland
+  - gelderland
+  - pays-bas
+  - niederlande
+  - paesi bassi
+  - países bajos
+  - olanda
+  - amsterdam
+  - rotterdam
+  - den haag
+  - the hague
+  - utrecht
+  - eindhoven
+  - groningen
+  - leiden
+  - delft
+  - geleen
+  - sittard
+  - terneuzen
+  - botlek
+  - europoort
+  - pernis
+  - maasvlakte
+  - dordrecht
+  - zwijndrecht
+  - tilburg
+  - breda
+  - nijmegen
+  - arnhem
+  - oss
+  - veghel
+  - amersfoort
+  - zwolle
+  - deventer
+  - enschede
+  - delfzijl
+  - sluiskil
+  - vlissingen
+  - ijmuiden
+  - hoofddorp
+  - zaandam
+  - koog aan de zaan
+  - wormerveer
+  - almere
+  - lelystad
+  - heerlen
+  - olst
+  - veldhoven
+  - almelo
+  - venlo
+  - drachten
+  - roermond
+  - budel
+  - apeldoorn
+  - nijverdal
+  - heerenveen
+  - assen
+  - petten
+  - schiedam
+  - uithoorn
+  - sassenheim
+  - duiven
+  - maastricht
+  - hengelo
+  - ede
+  - barneveld
+  - gorinchem
+  - spijkenisse
+  - hoogvliet
+  - emmen
+  - kerkrade
+  - weert
+  - helmond
+  - zoetermeer
+  - rijswijk
+  - diemen
+  - haarlem
+  - wageningen
+  - bilthoven
+  - renkum
+  - eerbeek
+  - dongen
+  - steenderen
+  - kruiningen
+  - bergen op zoom
+  - zundert
+  - sas van gent
+  - moerdijk
+  - chemelot
+  - sneek
+  - rijssen
+  - oldenzaal
+  - "'s-hertogenbosch"
+  - den bosch
+  - alkmaar
+  - leeuwarden
+  - harlingen
+  - den helder
+  - papendrecht
+  # Belgium
+  - belgium
+  - belgië
+  - belgie
+  - belgique
+  - belgien
+  - belgio
+  - bélgica
+  - antwerp
+  - antwerpen
+  - anvers
+  - brussels
+  - bruxelles
+  - brussel
+  - ghent
+  - gent
+  - liège
+  - luik
+  - zwijnaarde
+  - geel
+  - kallo
+  - zandvliet
+  - tessenderlo
+  - mechelen
+  - leuven
+  - hasselt
+  - genk
+  - lommel
+  - kortrijk
+  - brugge
+  - bruges
+  - oostende
+  - ostend
+  - aalst
+  - namur
+  - namen
+  - charleroi
+  - mons
+  - wavre
+  - louvain-la-neuve
+  - feluy
+  - seneffe
+  - beveren
+  - zelzate
+  - evergem
+  - lillo
+  - bornem
+  - willebroek
+  - puurs
+  - beerse
+  - zaventem
+  - diegem
+  - vilvoorde
+  - nivelles
+
+foreign_location_keywords:
+  # India (removed from wanted places on 2026-11-03)
+  - india
+  - inde
+  - bharat
+  - mumbai
+  - bombay
+  - navi mumbai
+  - thane
+  - pune
+  - bengaluru
+  - bangalore
+  - hyderabad
+  - chennai
+  - delhi
+  - new delhi
+  - gurgaon
+  - gurugram
+  - noida
+  - kolkata
+  - ahmedabad
+  - vadodara
+  - baroda
+  - jamnagar
+  - bharuch
+  - dahej
+  - ankleshwar
+  - surat
+  - visakhapatnam
+  - vizag
+  - nagpur
+  - kochi
+  - cochin
+  - mangalore
+  - mangaluru
+  - indore
+  - chandigarh
+  - jaipur
+  - lucknow
+  - bhubaneswar
+  - tamil nadu
+  - maharashtra
+  - gujarat
+  - karnataka
+  - telangana
+  - haryana
+  - uttar pradesh
+  - kerala
+  - west bengal
+  - rajasthan
+  - andhra pradesh
+  - odisha
+  - orissa
+  - silvassa
+  - dahanu
+  - sanand
+  - barauni
+  - numaligarh
+  - bathinda
+  - taloja
+  - nagothane
+  - patalganga
+  - ratnagiri
+  - hosur
+  - ennore
+  - sriperumbudur
+  - thoothukudi
+  - tuticorin
+  - madurai
+  - vijayawada
+  - nellore
+  - tirupati
+  - jamshedpur
+  - bokaro
+  - durgapur
+  - rourkela
+  - bhilai
+  - raipur
+  - korba
+  - jharsuguda
+  - guwahati
+  - dehradun
+  - haridwar
+  - baddi
+  - bhiwadi
+  - neemrana
+  - ludhiana
+  - patna
+  - ranchi
+  - jharkhand
+  - chhattisgarh
+  - assam
+  - uttarakhand
+  - himachal pradesh
+  - madhya pradesh
+  - punjab
+  - bhopal
+  - coimbatore
+  - nashik
+  - aurangabad
+  - raigad
+  - hazira
+  - vapi
+  - kandla
+  - mundra
+  - haldia
+  - panipat
+  - mathura
+  - kakinada
+  - paradip
+  - united states
+  - usa
+  - u.s.
+  - us
+  - america
+  - texas
+  - louisiana
+  - california
+  - michigan
+  - ohio
+  - pennsylvania
+  - new jersey
+  - illinois
+  - delaware
+  - georgia
+  - north carolina
+  - south carolina
+  - west virginia
+  - kentucky
+  - tennessee
+  - alabama
+  - indiana
+  - iowa
+  - minnesota
+  - massachusetts
+  - new york
+  - canada
+  - mexico
+  - méxico
+  - brazil
+  - brasil
+  - argentina
+  - chile
+  - colombia
+  - peru
+  - united kingdom
+  - uk
+  - great britain
+  - england
+  - scotland
+  - wales
+  - northern ireland
+  - switzerland
+  - schweiz
+  - suisse
+  - zwitserland
+  - norway
+  - norge
+  - noorwegen
+  - iceland
+  - turkey
+  - türkiye
+  - russia
+  - ukraine
+  - serbia
+  - china
+  - singapore
+  - japan
+  - korea
+  - taiwan
+  - hong kong
+  - malaysia
+  - indonesia
+  - thailand
+  - vietnam
+  - philippines
+  - australia
+  - new zealand
+  - saudi arabia
+  - united arab emirates
+  - uae
+  - dubai
+  - abu dhabi
+  - qatar
+  - oman
+  - kuwait
+  - bahrain
+  - israel
+  - egypt
+  - south africa
+  - nigeria
+  - morocco
+  - pakistan
+  - bangladesh
+  - sri lanka
+  - austria
+  - österreich
+  - oostenrijk
+  - bulgaria
+  - croatia
+  - hrvatska
+  - cyprus
+  - czech republic
+  - czechia
+  - česko
+  - tsjechië
+  - denmark
+  - danmark
+  - denemarken
+  - estonia
+  - eesti
+  - finland
+  - suomi
+  - france
+  - frankrijk
+  - germany
+  - deutschland
+  - duitsland
+  - greece
+  - griekenland
+  - hungary
+  - magyarország
+  - hongarije
+  - ireland
+  - éire
+  - ierland
+  - italy
+  - italia
+  - italië
+  - latvia
+  - latvija
+  - lithuania
+  - lietuva
+  - luxembourg
+  - luxemburg
+  - malta
+  - poland
+  - polska
+  - polen
+  - portugal
+  - romania
+  - românia
+  - roemenië
+  - slovakia
+  - slovensko
+  - slovenia
+  - slovenija
+  - spain
+  - españa
+  - spanje
+  - sweden
+  - sverige
+  - zweden
+  - ludwigshafen
+  - leverkusen
+  - frankfurt
+  - münchen
+  - munich
+  - berlin
+  - hamburg
+  - köln
+  - cologne
+  - düsseldorf
+  - marl
+  - wesseling
+  - dormagen
+  - krefeld
+  - stade
+  - burghausen
+  - leuna
+  - schkopau
+  - darmstadt
+  - mainz
+  - stuttgart
+  - essen
+  - aachen
+  - paris
+  - lyon
+  - lille
+  - marseille
+  - dunkerque
+  - grenoble
+  - toulouse
+  - tarragona
+  - madrid
+  - barcelona
+  - huelva
+  - bilbao
+  - milan
+  - milano
+  - rome
+  - roma
+  - turin
+  - torino
+  - ferrara
+  - vienna
+  - wien
+  - linz
+  - graz
+  - warsaw
+  - warszawa
+  - kraków
+  - krakow
+  - gdańsk
+  - gdansk
+  - wrocław
+  - wroclaw
+  - płock
+  - plock
+  - prague
+  - praha
+  - brno
+  - budapest
+  - bucharest
+  - bucurești
+  - sofia
+  - zagreb
+  - ljubljana
+  - bratislava
+  - lisbon
+  - lisboa
+  - porto
+  - sines
+  - dublin
+  - cork
+  - limerick
+  - copenhagen
+  - københavn
+  - kalundborg
+  - aarhus
+  - odense
+  - stockholm
+  - gothenburg
+  - göteborg
+  - stenungsund
+  - malmö
+  - malmo
+  - helsinki
+  - espoo
+  - porvoo
+  - oulu
+  - athens
+  - tallinn
+  - riga
+  - vilnius
+
+  # the same countries as some careers sites write them (Italian, French, German, Dutch)
+  - stati uniti
+  - états-unis
+  - etats-unis
+  - vereinigte staaten
+  - verenigde staten
+  - regno unito
+  - royaume-uni
+  - vereinigtes königreich
+  - verenigd koninkrijk
+  - germania
+  - allemagne
+  - francia
+  - frankreich
+  - spagna
+  - espagne
+  - spanien
+  - italie
+  - italien
+  - svizzera
+  - svezia
+  - suède
+  - schweden
+  - danimarca
+  - norvegia
+  - finlandia
+  - polonia
+  - pologne
+  - irlanda
+  - irlande
+  - lituania
+  - cechia
+  - repubblica ceca
+  - ungheria
+  - grecia
+  - cina
+  - chine
+  - giappone
+  - japon
+  - corea
+  - corée
+  - canadá
+  - messico
+  - brasile
+  - brésil
+  - australie
+  - singapour
+  - arabia saudita
+  - emirati arabi
+  # more places that came up in alerts
+  - kuala lumpur
+  - seremban
+  - penang
+  - melaka
+  - kaohsiung
+  - hsinchu
+  - taipei
+  - suzhou
+  - tianjin
+  - chongqing
+  - zhuhai
+  - austin
+  - dallas
+  - cincinnati
+  - san jose
+  - manchester
+  - london
+  - liverpool
+  - basel
+  - visp
+  - catania
+  - dresden
+  - bangkok
+  - manila
+  - taguig
+  - cabuyao
+  - kyiv
+  - são paulo
+  - sao paulo
+  - riyadh
+  - dammam
+  - st. louis
+  - st louis
+  - houston
+  - san diego
+  - boston
+  - chicago
+  - shanghai
+  - beijing
+  - shenzhen
+  - weihai
+  - tokyo
+  - monaco
+  - douvrin
+  - pozzuoli
+  - gdynia
+  - łódź
+  - lodz
+  - uppsala
+  - umeå
+  - freiburg
+  - ferentino
+  - loughborough
+  - hemel hempstead
+
+# ------------------------------------------------------------- 5. OTHER
+# Be polite to company websites.
+request_delay_seconds: 2
+timeout_seconds: 25
+respect_robots_txt: true
+user_agent: "jobwatch/1.0 (personal job-alert script; checks a few times a day)"
+
+# Max postings to read from each Workday-type feed per run.
+max_jobs_per_api: 300
+# Skip companies below this priority (Low | Medium | High).
+min_priority: Low
+
+# Every alert also lists the jobs already shown to you in the last N hours
+# (marked "already shown"), so nothing scrolls out of sight. 0 = only new jobs.
+repeat_hours: 24
+
+# Every N runs, add a list of careers pages that have failed 3+ times in a row
+# to the email so you can fix their links. 0 = never.
+notify_errors_every_runs: 28

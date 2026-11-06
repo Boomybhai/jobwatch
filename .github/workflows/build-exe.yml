@@ -1,0 +1,29 @@
+name: build-exe
+
+# Builds jobwatch.exe on a Windows machine in the cloud.
+# Actions tab -> build-exe -> Run workflow, then download "jobwatch-windows"
+# from the finished run's Artifacts section.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        shell: pwsh
+        run: ./packaging/build_exe.ps1
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          cd dist/jobwatch-windows
+          ./jobwatch.exe list | Select-Object -First 3
+          ./jobwatch.exe run --only "avantium" --dry-run --no-render --notify none
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jobwatch-windows
+          path: dist/jobwatch-windows/*

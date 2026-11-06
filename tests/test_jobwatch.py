@@ -1,0 +1,1195 @@
+"""Offline tests: no network needed."""
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+import pytest
+
+from jobwatch import notify
+from jobwatch.adapters import (
+    check_company,
+    detect_adapter,
+    parse_html_jobs,
+    workday_endpoint,
+)
+from jobwatch.cli import main
+from jobwatch.config import Settings, load_companies, load_settings
+from jobwatch.filters import is_relevant
+from jobwatch.models import Company, Job
+from jobwatch.state import State
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+# ------------------------------------------------------------------ config
+def test_shipped_config_and_companies_load():
+    s = load_settings(ROOT / "config.yaml")
+    assert "engineer" in s.include_keywords and "senior" in s.exclude_keywords
+    companies = load_companies(ROOT / "companies.csv")
+    assert len(companies) >= 150
+    assert all(c.url for c in companies if c.enabled)
+    # job boards must be switched off
+    assert not any("linkedin.com" in c.url for c in companies if c.enabled)
+
+
+# --------------------------------------------------------------- detection
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("https://huntsman.wd1.myworkdayjobs.com/Huntsman", "workday"),
+        ("https://job-boards.greenhouse.io/avantium", "greenhouse"),
+        ("https://resatohydrogentechnology.recruitee.com/", "recruitee"),
+        ("https://careers.smartrecruiters.com/aviko", "smartrecruiters"),
+        ("https://apply.workable.com/circularise/", "workable"),
+        ("https://www.werkenbijtauw.nl/vacatures/", "html"),
+    ],
+)
+def test_detect_adapter(url, expected):
+    assert detect_adapter(url) == expected
+
+
+def test_workday_endpoint_skips_locale():
+    api, public, site = workday_endpoint("https://iff.wd5.myworkdayjobs.com/en-US/IFF_Careers")
+    assert api == "https://iff.wd5.myworkdayjobs.com/wday/cxs/iff/IFF_Careers/jobs"
+    assert public == "https://iff.wd5.myworkdayjobs.com/IFF_Careers"
+    assert site == "IFF_Careers"
+
+
+# -------------------------------------------------------------------- HTML
+HTML = """
+<html><body>
+<nav><a href="/vacatures">Vacatures</a></nav>
+<h1>Onze vacatures</h1>
+<ul>
+ <li><a href="/vacatures/graduate-process-engineer-123">Graduate Process Engineer</a></li>
+ <li><a href="https://example.com/job/senior-hse-manager">Senior HSE Manager</a></li>
+ <li><a href="/vacatures/operator-5-ploegen">Operator 5-ploegen</a></li>
+ <li><a href="/over-ons">Over ons en onze geschiedenis</a></li>
+ <li><a href="/vacatures/graduate-process-engineer-123#apply">Apply</a></li>
+ <li><a href="mailto:hr@example.com">Mail HR about jobs</a></li>
+</ul>
+<footer><a href="/jobs/privacy-statement">Privacy statement jobs</a></footer>
+</body></html>
+"""
+
+
+def test_parse_html_jobs_finds_postings_only():
+    jobs = parse_html_jobs(HTML, "https://example.com/vacatures", "Example")
+    titles = sorted(j.title for j in jobs)
+    assert titles == ["Graduate Process Engineer", "Operator 5-ploegen", "Senior HSE Manager"]
+    assert all(j.url.startswith("https://example.com/") for j in jobs)
+
+
+# ------------------------------------------------------------------ filter
+@pytest.fixture
+def settings():
+    return load_settings(ROOT / "config.yaml")
+
+
+@pytest.mark.parametrize(
+    "title,location,ok",
+    [
+        ("Graduate Process Engineer", "", True),
+        ("Junior Procestechnoloog", "Gorinchem", True),
+        ("Process Safety Engineer", "Koog aan de Zaan, Netherlands", True),
+        ("Senior Process Engineer", "", False),
+        ("Operator 5-ploegen", "", False),
+        ("Internship Chemical Engineering", "", False),
+        ("Chemical Engineer", "Houston, TX", False),            # US state
+            ("Chemical Engineer", "Ludwigshafen, Germany", False),  # foreign country
+            ("Chemical Engineer", "Lyon, France", False),           # foreign country
+            ("Chemical Engineer", "Kalundborg, Denmark", False),    # foreign country
+            ("Chemical Engineer", "Tilburg Plant", True),           # unknown town -> keep
+            ("Chemical Engineer", "Bergen op Zoom, NB", True),      # Dutch province code
+        ("Chemical Engineer", "", True),                       # unknown location -> keep
+        ("International Sales Manager", "", False),
+        ("Finance Business Partner", "", False),               # no include keyword
+    ],
+)
+def test_is_relevant(settings, title, location, ok):
+    assert is_relevant(Job("X", title, "u", location=location), settings) is ok
+
+
+# ------------------------------------------------------------------- state
+def test_state_baseline_then_detects_new(tmp_path):
+    st = State(tmp_path / "s.json")
+    a, b = Job("Co", "A", "u/a"), Job("Co", "B", "u/b")
+    assert st.new_jobs("Co", [a]) == []          # first check = baseline, no alerts
+    assert st.new_jobs("Co", [a, b]) == [b]      # B is new
+    assert st.new_jobs("Co", [a, b]) == []       # nothing new
+    st.save()
+    st2 = State(tmp_path / "s.json")
+    assert st2.new_jobs("Co", [a, b]) == []      # survives reload
+
+
+def test_state_error_streak(tmp_path):
+    st = State(tmp_path / "s.json")
+    assert st.record_error("Co", "boom") == 1
+    assert st.record_error("Co", "boom") == 2
+    st.new_jobs("Co", [])
+    assert st.data["companies"]["Co"]["consecutive_errors"] == 0
+
+
+# ---------------------------------------------------------------- adapters
+class FakeFetcher:
+    allow_render = False
+
+    def __init__(self, html=None, json_by_url=None, post=None):
+        self.html, self.json_by_url, self.post = html, json_by_url or {}, post
+        self.calls = []
+
+    def get(self, url, **kw):
+        self.calls.append(url)
+        return type("R", (), {"text": self.html, "url": url})()
+
+    def get_json(self, url, **kw):
+        self.calls.append(url)
+        return self.json_by_url[url]
+
+    def post_json(self, url, payload):
+        self.calls.append((url, payload["offset"]))
+        return self.post(payload["offset"])
+
+    def render(self, url):
+        raise RuntimeError("no browser")
+
+    def close(self):
+        pass
+
+
+def test_workday_paging_and_locations():
+    pages = {
+        0: {"total": 25, "jobPostings": [
+            {"title": f"Engineer {i}", "externalPath": f"/job/NL/E{i}", "locationsText": "Tilburg, Netherlands"}
+            for i in range(20)]},
+        20: {"total": 25, "jobPostings": [
+            {"title": "Chemical Engineer", "externalPath": "/job/x/1", "locationsText": "3 Locations"}]},
+    }
+    f = FakeFetcher(post=lambda off: pages[off])
+    res = check_company(f, Company("IFF", "https://iff.wd5.myworkdayjobs.com/en-US/IFF_Careers"))
+    assert not res.error and res.method == "workday"
+    assert len(res.jobs) == 21
+    assert res.jobs[-1].location == ""            # "3 Locations" blanked
+    assert res.jobs[0].url == "https://iff.wd5.myworkdayjobs.com/IFF_Careers/job/NL/E0"
+
+
+def test_greenhouse_recruitee_smartrecruiters():
+    f = FakeFetcher(json_by_url={
+        "https://boards-api.greenhouse.io/v1/boards/avantium/jobs":
+            {"jobs": [{"id": 1, "title": "Process Engineer", "absolute_url": "https://g/1",
+                       "location": {"name": "Amsterdam"}}]},
+        "https://x.recruitee.com/api/offers/":
+            {"offers": [{"id": 2, "title": "Junior Engineer", "careers_url": "https://r/2",
+                         "city": "Assen", "country": "Netherlands"}]},
+        "https://api.smartrecruiters.com/v1/companies/aviko/postings?limit=100":
+            {"content": [{"id": "3", "name": "Graduate Engineer",
+                          "location": {"city": "Steenderen", "country": "nl"}}]},
+    })
+    g = check_company(f, Company("Avantium", "https://job-boards.greenhouse.io/avantium"))
+    r = check_company(f, Company("Resato", "https://x.recruitee.com/"))
+    s = check_company(f, Company("Aviko", "https://careers.smartrecruiters.com/aviko"))
+    assert [j.title for j in g.jobs + r.jobs + s.jobs] == ["Process Engineer", "Junior Engineer", "Graduate Engineer"]
+    assert s.jobs[0].url == "https://jobs.smartrecruiters.com/aviko/3"
+
+
+def test_one_broken_site_returns_error_not_exception():
+    f = FakeFetcher(json_by_url={})
+    res = check_company(f, Company("Avantium", "https://job-boards.greenhouse.io/avantium"))
+    assert res.error.startswith("KeyError")
+
+
+# ------------------------------------------------------------------- email
+def test_build_email():
+    jobs = [Job("B Co", "Process Engineer", "https://b/1", "Delft"), Job("A Co", "Trainee <R&D>", "https://a/1")]
+    subject, text, html = notify.build_email(jobs, [("C Co", "HTTPError 404")])
+    assert subject == "jobwatch: 2 new postings at 2 companies"
+    assert text.index("A Co") < text.index("B Co")
+    assert "Trainee &lt;R&amp;D&gt;" in html and "C Co" in html
+
+
+def test_send_email_without_credentials_is_noop(monkeypatch):
+    for k in ["SMTP_USER", "SMTP_PASSWORD", "EMAIL_TO"]:
+        monkeypatch.delenv(k, raising=False)
+    assert notify.send_email("s", "t", "h") is False
+
+
+def test_send_email_uses_smtp(monkeypatch):
+    sent = {}
+
+    class FakeSMTP:
+        def __init__(self, host, port, **kw):
+            sent["host"], sent["port"] = host, port
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def login(self, u, p): sent["user"] = u
+        def send_message(self, m): sent["to"] = m["To"]; sent["subject"] = m["Subject"]
+
+    monkeypatch.setattr(notify.smtplib, "SMTP_SSL", FakeSMTP)
+    monkeypatch.setenv("SMTP_USER", "me@gmail.com")
+    monkeypatch.setenv("SMTP_PASSWORD", "app-password")
+    monkeypatch.setenv("SMTP_PORT", "")            # empty GitHub secret -> default
+    monkeypatch.delenv("EMAIL_TO", raising=False)
+    assert notify.send_email("Hello", "t", "<b>h</b>") is True
+    assert sent == {"host": "smtp.gmail.com", "port": 465, "user": "me@gmail.com",
+                    "to": "me@gmail.com", "subject": "Hello"}
+
+
+# --------------------------------------------------------------- end to end
+def test_full_run_with_mocked_sites(tmp_path, monkeypatch, capsys):
+    companies = tmp_path / "companies.csv"
+    companies.write_text(
+        "name,priority,group,url,enabled,adapter,render,link_type,note\n"
+        "Example,High,Chemicals,https://example.com/vacatures,yes,auto,never,Careers page,\n"
+        "Broken,High,Chemicals,https://broken.example/jobs,yes,auto,never,Careers page,\n"
+        "Off,High,Chemicals,https://www.linkedin.com/jobs/x,no,auto,auto,,job board\n",
+        encoding="utf-8",
+    )
+    pages = {"https://example.com/vacatures": HTML,
+             "https://example.com/vacatures/junior-chemical-engineer-9": "<p>Location: Rotterdam, Netherlands.</p>"}
+
+    def fake_get(self, url, **kw):
+        if url not in pages:
+            raise ConnectionError("unreachable")
+        return type("R", (), {"text": pages[url], "url": url})()
+
+    monkeypatch.setattr("jobwatch.fetch.Fetcher.get", fake_get)
+    emails = []
+    monkeypatch.setattr(notify, "send_email", lambda *a: emails.append(a) or True)
+    args = ["--companies", str(companies), "--state", str(tmp_path / "state.json"), "--no-render"]
+
+    assert main(["run", *args]) == 0                 # run 1: baseline, silent
+    assert emails == []
+    pages["https://example.com/vacatures"] = HTML.replace(
+        "</ul>", '<li><a href="/vacatures/junior-chemical-engineer-9">Junior Chemical Engineer</a></li>'
+                 '<li><a href="/vacatures/senior-chemist-8">Senior Chemist</a></li></ul>')
+    assert main(["run", *args]) == 0                 # run 2: one relevant new job
+    assert len(emails) == 1
+    subject, text, _ = emails[0]
+    assert subject == "⭐ jobwatch: 1 new posting at 1 company (1 favourite)"
+    assert "Junior Chemical Engineer" in text and "Senior Chemist" not in text
+    state = json.loads((tmp_path / "state.json").read_text())
+    assert state["companies"]["Broken"]["consecutive_errors"] == 2
+    assert "Off" not in state["companies"]
+
+
+# ------------------------------------------------------------- .exe helpers
+def test_load_env_file(tmp_path, monkeypatch):
+    from jobwatch.app_paths import load_env_file
+
+    env = tmp_path / "email.env"
+    env.write_text("# comment\nSMTP_USER = me@gmail.com\nSMTP_PASSWORD='abcd efgh'\nEMAIL_TO=\n", encoding="utf-8")
+    monkeypatch.delenv("SMTP_USER", raising=False)
+    monkeypatch.delenv("SMTP_PASSWORD", raising=False)
+    monkeypatch.setenv("EMAIL_TO", "keep@me.nl")
+    assert sorted(load_env_file(env)) == ["SMTP_PASSWORD", "SMTP_USER"]
+    assert os.environ["SMTP_PASSWORD"] == "abcd efgh"
+    assert os.environ["EMAIL_TO"] == "keep@me.nl"          # real env var wins
+    assert load_env_file(tmp_path / "missing.env") == []
+
+
+def test_app_dir_is_exe_folder_when_frozen(monkeypatch, tmp_path):
+    import sys
+
+    from jobwatch import app_paths
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "jobwatch.exe"))
+    assert app_paths.app_dir() == tmp_path
+
+
+def test_phone_notify(monkeypatch):
+    sent = []
+
+    class R:
+        def raise_for_status(self): pass
+
+    import requests
+    monkeypatch.setattr(requests, "post", lambda url, json, timeout: sent.append((url, json)) or R())
+    monkeypatch.delenv("NTFY_TOPIC", raising=False)
+    assert notify.phone_notify([Job("Coöperatie X", "Junior Engineer", "https://x/1")]) is False
+    monkeypatch.setenv("NTFY_TOPIC", "manan-test")
+    jobs = [Job("Coöperatie X", "Junior Engineer", "https://x/1", "Veendam"), Job("ASML", "Graduate", "https://a/1")]
+    assert notify.phone_notify(jobs) is True
+    assert [p["title"] for _, p in sent] == ["ASML", "Coöperatie X"]   # one push per job
+    assert sent[1][0] == "https://ntfy.sh" and sent[1][1]["topic"] == "manan-test"
+    assert sent[1][1]["click"] == "https://x/1" and "Junior Engineer (Veendam)" in sent[1][1]["message"]
+
+
+# -------------------------------------------------------------- experience
+from jobwatch.experience import min_years_required  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "text,years",
+    [
+        ("You have 2-4 years of experience in process engineering.", 2),
+        ("Requirements: 0-2 years experience; MSc Chemical Engineering", 0),
+        ("At least 5 years of relevant experience in a chemical plant.", 5),
+        ("Minimum of 3 years’ experience in the process industry", 3),
+        ("You bring 7+ years of hands-on experience with distillation.", 7),
+        ("3 years' experience in GMP manufacturing is a plus", 3),
+        ("two to three years of professional experience", 2),
+        ("Je hebt minimaal 3 jaar werkervaring als procestechnoloog.", 3),
+        ("Je hebt 2 tot 5 jaar relevante ervaring.", 2),
+        ("Experience: 4+ years in project engineering", 4),
+        ("We are looking for a recent graduate (MSc).", 0),
+        ("No prior experience required — full training provided.", 0),
+        ("Our company has 150 years of history in Rotterdam.", None),
+        ("You enjoy working in a team.", None),
+        ("5+ years experience required; 2 years experience with Aspen is a plus", 2),
+    ],
+)
+def test_min_years_required(text, years):
+    assert min_years_required(text) == years
+
+
+def test_experience_filter_and_favourites(settings):
+    from jobwatch.filters import experience_ok, is_favourite
+
+    settings.favourite_keywords = ["chemical engineer", "process engineer"]
+    settings.max_years_experience = 5
+    assert is_favourite(Job("X", "Junior Process Engineer", "u"), settings)
+    assert not is_favourite(Job("X", "Project Engineer", "u"), settings)
+    assert experience_ok(Job("X", "a", "u", years=5), settings)
+    assert not experience_ok(Job("X", "a", "u", years=6), settings)
+    assert experience_ok(Job("X", "a", "u", years=None), settings)
+    settings.keep_if_experience_unknown = False
+    assert not experience_ok(Job("X", "a", "u", years=None), settings)
+
+
+def test_email_puts_favourites_first():
+    jobs = [Job("A Co", "Project Engineer", "https://a/1", years=None),
+            Job("Z Co", "Process Engineer", "https://z/1", years=2, favourite=True)]
+    subject, text, _ = notify.build_email(jobs)
+    assert subject.startswith("⭐") and "1 favourite" in subject
+    assert text.index("Z Co") < text.index("A Co")
+    assert "⭐ Process Engineer (asks 2+ yrs)" in text
+
+
+def test_workday_description_endpoint():
+    from jobwatch.experience import job_description
+
+    calls = []
+
+    class F:
+        allow_render = False
+        def get_json(self, url):
+            calls.append(url)
+            return {"jobPostingInfo": {"jobDescription": "<p>You have <b>3-5 years</b> of experience.</p>"}}
+
+    text = job_description(F(), Job("IFF", "Engineer", "https://iff.wd5.myworkdayjobs.com/IFF_Careers/job/NL/E0"))
+    assert calls == ["https://iff.wd5.myworkdayjobs.com/wday/cxs/iff/IFF_Careers/job/NL/E0"]
+    assert min_years_required(text) == 3
+
+
+def test_run_drops_postings_asking_too_much_experience(tmp_path, monkeypatch):
+    companies = tmp_path / "companies.csv"
+    companies.write_text(
+        "name,priority,group,url,enabled,adapter,render,link_type,note\n"
+        "Example,High,Chemicals,https://example.com/vacatures,yes,auto,never,Careers page,\n",
+        encoding="utf-8",
+    )
+    pages = {
+        "https://example.com/vacatures": HTML,
+        "https://example.com/vacatures/junior-chemical-engineer-9": "<p>0-2 years of experience. Starter welcome. Rotterdam, Netherlands.</p>",
+        "https://example.com/vacatures/process-engineer-7": "<p>You have at least 8 years of experience. Rotterdam, Netherlands.</p>",
+        "https://example.com/vacatures/project-engineer-6": "<p>Nothing about experience here. Rotterdam, Netherlands.</p>",
+    }
+
+    def fake_get(self, url, **kw):
+        if url not in pages:
+            raise ConnectionError("unreachable")
+        return type("R", (), {"text": pages[url], "url": url})()
+
+    monkeypatch.setattr("jobwatch.fetch.Fetcher.get", fake_get)
+    emails = []
+    monkeypatch.setattr(notify, "send_email", lambda *a: emails.append(a) or True)
+    # this test is about the experience filter, so let generic titles through
+    # (the real config may require a field word via only_favourites)
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text((ROOT / "config.yaml").read_text(encoding="utf-8")
+                   .replace("only_favourites: true", "only_favourites: false"), encoding="utf-8")
+    args = ["--config", str(cfg), "--companies", str(companies), "--state", str(tmp_path / "state.json"),
+            "--no-render"]
+    assert main(["run", *args]) == 0
+    pages["https://example.com/vacatures"] = HTML.replace(
+        "</ul>",
+        '<li><a href="/vacatures/junior-chemical-engineer-9">Junior Chemical Engineer</a></li>'
+        '<li><a href="/vacatures/process-engineer-7">Process Engineer</a></li>'
+        '<li><a href="/vacatures/project-engineer-6">Project Engineer</a></li></ul>')
+    assert main(["run", *args]) == 0
+    subject, text, _ = emails[0]
+    assert "⭐ Junior Chemical Engineer (Netherlands · starter / 0 yrs)" in text      # favourite, shown first
+    assert "Project Engineer" in text                                   # experience not stated -> kept
+    assert "\n  - Process Engineer" not in text and "⭐ Process Engineer" not in text  # 8 yrs -> dropped
+    assert text.index("Junior Chemical Engineer") < text.index("Project Engineer")
+
+
+# ------------------------------------------------------------- Belgium additions
+def test_french_experience_parsing():
+    from jobwatch.experience import min_years_required as m
+    assert m("Vous avez au moins 3 ans d’expérience") == 3
+    assert m("3 à 5 ans d'expérience en procédés") == 3
+    assert m("Profil: jeune diplômé ingénieur") == 0
+    assert m("une expérience de 2 ans") == 2
+
+
+def test_label_in_notification_name(tmp_path, monkeypatch):
+    from jobwatch.config import load_settings
+    from jobwatch.notify import app_name
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("label: Belgium\n", encoding="utf-8")
+    load_settings(cfg)
+    assert app_name() == "jobwatch Belgium"
+    cfg.write_text("min_priority: Low\n", encoding="utf-8")
+    load_settings(cfg)
+    assert app_name() == "jobwatch"
+
+
+def test_task_name_follows_folder(monkeypatch, tmp_path):
+    from jobwatch import wintask
+    monkeypatch.setattr(wintask, "app_dir", lambda: tmp_path / "jobwatch-belgium")
+    assert wintask.task_name() == "jobwatch-belgium"
+    monkeypatch.setattr(wintask, "app_dir", lambda: tmp_path / "jobwatch")
+    assert wintask.task_name() == "jobwatch"
+    monkeypatch.setattr(wintask, "app_dir", lambda: tmp_path / "Desktop stuff")
+    assert wintask.task_name() == "jobwatch"
+
+
+def test_phone_notify_each_job_opens_its_own_link(monkeypatch):
+    sent = []
+
+    class R:
+        def raise_for_status(self): pass
+
+    import requests
+    monkeypatch.setattr(requests, "post", lambda url, json, timeout: sent.append(json) or R())
+    monkeypatch.setenv("NTFY_TOPIC", "t")
+    jobs = [Job("Dow", "Process Engineer A", "https://d/a"), Job("Dow", "Process Engineer B", "https://d/b")]
+    assert notify.phone_notify(jobs) is True
+    assert [p["click"] for p in sent] == ["https://d/a", "https://d/b"]
+
+
+def test_relative_links_use_base_tag():
+    from jobwatch.adapters import parse_html_jobs
+    html = '<html><head><base href="https://x.com/careers/"></head><body>' \
+           '<a href="vacature/123-process-engineer">Process Engineer Junior</a></body></html>'
+    assert [j.url for j in parse_html_jobs(html, "https://x.com/nl/", "X")] == \
+        ["https://x.com/careers/vacature/123-process-engineer"]
+
+
+def test_changed_careers_url_rebaselines(tmp_path):
+    st = State(tmp_path / "s.json")
+    old = [Job("ASML", "Old", "u/1")]
+    assert st.new_jobs("ASML", old, source="https://www.asml.com/find") == []
+    new = [Job("ASML", "A", "w/1"), Job("ASML", "B", "w/2")]
+    assert st.new_jobs("ASML", new, source="https://asml.wd3.myworkdayjobs.com/ASMLEXT1") == []  # silent switch
+    assert st.new_jobs("ASML", new + [Job("ASML", "C", "w/3")],
+                       source="https://asml.wd3.myworkdayjobs.com/ASMLEXT1")[0].title == "C"
+
+
+def test_html_follows_next_page(monkeypatch):
+    from jobwatch import adapters
+    pages = {
+        "https://c.com/jobs": '<a href="/jobs/vacature/1-process-engineer">Process Engineer One</a>'
+                              '<a rel="next" href="/jobs?page=2">2</a>',
+        "https://c.com/jobs?page=2": '<a href="/jobs/vacature/2-chemical-engineer">Chemical Engineer Two</a>'
+                                     '<a href="/jobs?page=3">Volgende</a>',
+        "https://c.com/jobs?page=3": '<a href="/jobs/vacature/2-chemical-engineer">Chemical Engineer Two</a>',
+    }
+
+    class Resp:
+        def __init__(self, url): self.url, self.text = url, pages[url]
+
+    class F:
+        allow_render = False
+        def get(self, url): return Resp(url)
+
+    jobs, method = adapters.fetch_html(F(), Company(name="C", url="https://c.com/jobs"))
+    assert sorted(j.title for j in jobs) == ["Chemical Engineer Two", "Process Engineer One"]
+    assert method.startswith("html (")
+
+
+# ------------------------------------------------------ feed auto-discovery
+class SiteFetcher:
+    """Fake fetcher serving a dict of url -> text."""
+    allow_render = False
+
+    def __init__(self, pages, json_by_url=None):
+        self.pages, self.json_by_url, self.calls = pages, json_by_url or {}, []
+
+    def get(self, url, **kw):
+        self.calls.append(url)
+        if url not in self.pages:
+            raise ConnectionError(url)
+        return type("R", (), {"text": self.pages[url], "url": url})()
+
+    def get_json(self, url, **kw):
+        self.calls.append(url)
+        return self.json_by_url[url]
+
+    def render(self, url):
+        raise RuntimeError("no browser")
+
+
+def test_find_ats_links_picks_most_referenced_feed():
+    from jobwatch.discover import find_ats_links
+    html = ('<a href="https://acme.wd3.myworkdayjobs.com/en-US/AcmeCareers/job/Delft/Engineer_R1">x</a>'
+            '<a href="https://acme.wd3.myworkdayjobs.com/AcmeCareers/job/Geleen/Chemist_R2">y</a>'
+            '<script src="https://boards.greenhouse.io/embed/job_board/js?for=other"></script>')
+    assert find_ats_links(html) == ("workday", "https://acme.wd3.myworkdayjobs.com/en-US/AcmeCareers")
+    assert find_ats_links('<iframe src="https://boards.greenhouse.io/embed/job_board?for=acme">') == (
+        "greenhouse", "https://boards.greenhouse.io/acme")
+    assert find_ats_links('<a href="https://jobs.lever.co/acme/123-abc">') == ("lever", "https://jobs.lever.co/acme")
+    assert find_ats_links('<a href="https://acme.jobs.personio.de/job/42">') == ("personio", "https://acme.jobs.personio.de")
+    assert find_ats_links("<p>nothing here</p>") is None
+
+
+def test_discover_falls_back_to_job_sitemap():
+    from jobwatch.discover import discover
+    from jobwatch.adapters import check_company
+    pages = {
+        "https://acme.com/careers": '<a href="/careers/jobs/process-engineer-123">Process engineer</a>',
+        "https://acme.com/robots.txt": "User-agent: *\nSitemap: https://acme.com/sitemap_index.xml",
+        "https://acme.com/sitemap_index.xml":
+            '<sitemapindex><sitemap><loc>https://acme.com/sitemap-pages.xml</loc></sitemap>'
+            '<sitemap><loc>https://acme.com/sitemap-jobs.xml</loc></sitemap></sitemapindex>',
+        "https://acme.com/sitemap-pages.xml": "<urlset><url><loc>https://acme.com/about</loc></url></urlset>",
+        "https://acme.com/sitemap-jobs.xml": "<urlset>" + "".join(
+            f"<url><loc>https://acme.com/careers/jobs/{t}-{n}</loc></url>"
+            for n, t in [(1, "process-engineer"), (2, "junior-chemical-engineer"), (3, "lab-technician"),
+                         (4, "plant-operator")]) + "<url><loc>https://acme.com/careers/jobs/</loc></url></urlset>",
+    }
+    f = SiteFetcher(pages)
+    adapter, url = discover(f, Company("Acme", "https://acme.com/careers"))
+    assert (adapter, url) == ("sitemap", "https://acme.com/sitemap_index.xml")
+    res = check_company(f, Company("Acme", url, adapter=adapter))
+    assert res.method == "sitemap" and len(res.jobs) == 4
+    assert res.jobs[1].title == "Junior chemical engineer"
+
+
+def test_title_from_url_strips_ids():
+    from jobwatch.adapters import title_from_url
+    assert title_from_url("https://x.com/jobs/12345/process-engineer-rotterdam-r0123") == "Process engineer rotterdam"
+    assert title_from_url("https://x.com/vacatures/procestechnoloog-geleen.html") == "Procestechnoloog geleen"
+
+
+def test_lever_and_personio_adapters():
+    from jobwatch.adapters import check_company
+    f = SiteFetcher({"https://acme.jobs.personio.de/xml?language=en":
+                     "<workzag-jobs><position><id>7</id><office>Delft</office><name>Process Engineer</name>"
+                     "</position></workzag-jobs>"},
+                    {"https://api.lever.co/v0/postings/acme?mode=json":
+                     [{"id": "a1", "text": "Chemical Engineer", "hostedUrl": "https://jobs.lever.co/acme/a1",
+                       "categories": {"location": "Rotterdam"}, "country": "NL"}]})
+    lev = check_company(f, Company("Acme", "https://jobs.lever.co/acme"))
+    assert lev.method == "lever" and lev.jobs[0].location == "Rotterdam, NL"
+    per = check_company(f, Company("Acme", "https://acme.jobs.personio.de/"))
+    assert per.method == "personio" and per.jobs[0].url == "https://acme.jobs.personio.de/job/7?language=en"
+    assert per.jobs[0].location == "Delft"
+
+
+def test_resolve_caches_and_rediscovers():
+    from jobwatch import discover as d
+    calls = []
+    orig = d.discover
+    d.discover = lambda f, c: calls.append(c.url) or ("workday", "https://a.wd3.myworkdayjobs.com/Ext")
+    try:
+        cache = {}
+        c = Company("A", "https://a.com/careers")
+        assert d.resolve(None, c, cache).adapter == "workday"
+        assert d.resolve(None, c, cache).url == "https://a.wd3.myworkdayjobs.com/Ext"
+        assert len(calls) == 1                       # cached
+        d.invalidate(cache)
+        d.resolve(None, c, cache)
+        assert len(calls) == 2                       # looked again after invalidate
+        d.resolve(None, Company("A", "https://a.com/new-careers"), cache)
+        assert len(calls) == 3                       # careers URL changed in companies.csv
+    finally:
+        d.discover = orig
+
+
+def test_enrich_reads_jobposting_location():
+    from jobwatch.enrich import enrich
+    page = ('<html><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":'
+            '"JobPosting","title":"Graduate Process Engineer","description":"<p>' + "Starter role. " * 40 +
+            '</p>","jobLocation":{"@type":"Place","address":{"addressLocality":"Kallo","addressCountry":"BE"}}}]}'
+            '</script><h1>ignored</h1></html>')
+    j = Job("Acme", "Graduate process engineer 123", "https://acme.com/jobs/graduate-process-engineer-123")
+    enrich(SiteFetcher({j.url: page}), j)
+    assert j.title == "Graduate Process Engineer"
+    assert j.location == "Kallo, Belgium"
+    assert j.description.startswith("Starter role.")
+
+
+def test_phone_notify_sends_every_posting_and_saves_list(monkeypatch, tmp_path):
+    sent = []
+
+    class R:
+        status_code = 200
+        def raise_for_status(self): pass
+
+    import requests
+    monkeypatch.setattr(requests, "post", lambda url, json, timeout: sent.append(json) or R())
+    monkeypatch.setattr(notify, "PUSH_GAP", 0)
+    monkeypatch.setenv("NTFY_TOPIC", "t")
+    jobs = [Job(f"Co{i % 4}", f"Process Engineer {i}", f"https://c/{i}") for i in range(89)]
+    assert notify.phone_notify(jobs) is True
+    assert len(sent) == 89 and len({p["click"] for p in sent}) == 89
+    notify.save_list(jobs, tmp_path)
+    page = (tmp_path / "new-jobs.html").read_text(encoding="utf-8")
+    assert page.count("<a href=") == 89 and "https://c/88" in page
+
+
+# ------------------------------------------------------------ Oracle Cloud
+ORACLE_SITE = "https://edsv.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/jobs"
+
+
+def test_detect_oracle():
+    assert detect_adapter(ORACLE_SITE) == "oracle"
+
+
+def test_oracle_paging_locations_and_links():
+    from jobwatch.adapters import ORACLE_PAGE
+
+    def req(i, loc="The Hague, South Holland, Netherlands"):
+        return {"Id": str(26000000 + i), "Title": f"Engineer {i}", "PostedDate": "2026-10-12",
+                "PrimaryLocation": loc, "secondaryLocations": []}
+
+    class F(FakeFetcher):
+        def get_json(self, url, **kw):
+            self.calls.append(url)
+            off = int(url.split("offset=")[1].split(",")[0])
+            reqs = [req(i) for i in range(off, min(off + ORACLE_PAGE, 30))]
+            if off == 25:
+                reqs[-1] = req(29, "Houston, TX, United States") | {
+                    "Title": "Associate Process Engineer",
+                    "secondaryLocations": [{"Name": "London, United Kingdom"}]}
+            return {"items": [{"TotalJobsCount": 30, "requisitionList": reqs}]}
+
+    f = F()
+    res = check_company(f, Company("McDermott", ORACLE_SITE))
+    assert not res.error and res.method == "oracle"
+    assert len(res.jobs) == 30 and len(f.calls) == 2
+    assert "siteNumber=CX_1" in f.calls[0] and "offset=0" in f.calls[0]
+    assert res.jobs[0].url == "https://edsv.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/26000000"
+    assert res.jobs[0].id == "26000000"
+    assert res.jobs[-1].location == "Houston, TX, United States; London, United Kingdom"
+
+
+def test_oracle_found_from_company_careers_page():
+    from jobwatch.discover import discover
+
+    html = ('<a href="https://edsv.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/26003008">'
+            'Project Engineer</a>')
+    adapter, url = discover(FakeFetcher(html=html), Company("McDermott", "https://www.mcdermott.com/careers/search-apply"))
+    assert adapter == "oracle"
+    assert url == "https://edsv.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1"
+
+
+def test_oracle_description_endpoint():
+    from jobwatch.experience import job_description
+
+    calls = []
+
+    class F:
+        allow_render = False
+        def get_json(self, url):
+            calls.append(url)
+            return {"items": [{"ExternalDescriptionStr": "<p>Entry level.</p>",
+                               "ExternalQualificationsStr": "<ul><li>0-3 years of experience</li></ul>"}]}
+
+    url = "https://edsv.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/26004840"
+    text = job_description(F(), Job("McDermott", "Associate Process Engineer", url))
+    assert "finder=ById;Id=%2226004840%22,siteNumber=CX_1" in calls[0]
+    assert min_years_required(text) == 0
+
+
+# ------------------------------------------------------- SuccessFactors / Eightfold
+SF_RSS = """<?xml version="1.0" encoding="UTF-8" ?><rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel>
+<title>Tetra Pak</title>
+<item><title>Process Engineer Evaporator (Heerenveen, NL)</title>
+<description><![CDATA[&lt;p&gt;You have &lt;b&gt;0-2 years&lt;/b&gt; of experience.&lt;/p&gt;]]></description>
+<link>https://jobs.tetrapak.com/job/Heerenveen-Process-Engineer-Evaporator/1445/?feedId=1</link>
+<guid isPermaLink="false">1445</guid><g:id>1445</g:id><g:location>Heerenveen, NL</g:location></item>
+<item><title>Sales Manager (Jakarta, ID)</title><description>x</description>
+<link>https://jobs.tetrapak.com/job/Jakarta-Sales-Manager/1446/</link><g:id>1446</g:id><g:location>Jakarta, ID</g:location></item>
+<item><title>Talent community</title><link>https://jobs.tetrapak.com/talentcommunity/</link></item>
+</channel></rss>"""
+
+
+def test_successfactors_rss_feed(settings):
+    f = FakeFetcher(html=SF_RSS)
+    res = check_company(f, Company("Tetra Pak", "https://jobs.tetrapak.com/", adapter="successfactors"))
+    assert not res.error and res.method == "successfactors"
+    assert f.calls == ["https://jobs.tetrapak.com/sitemap.xml"]
+    nl, idn = res.jobs
+    assert nl.title == "Process Engineer Evaporator"
+    assert nl.url == "https://jobs.tetrapak.com/job/Heerenveen-Process-Engineer-Evaporator/1445/"
+    assert nl.id == "1445" and nl.location == "Heerenveen, NL, Netherlands"
+    assert idn.location == "Jakarta, ID"
+    assert is_relevant(nl, settings)
+
+
+def test_sitemap_parser_reads_rss_links():
+    from jobwatch.discover import _sitemap_urls
+    _, pages = _sitemap_urls(SF_RSS)
+    assert "https://jobs.tetrapak.com/job/Jakarta-Sales-Manager/1446/" in pages
+
+
+def test_discover_recognises_platform_from_page():
+    from jobwatch.discover import discover
+    sf = '<link rel="icon" href="https://rmkcdn.successfactors.com/0e86/x.png">'
+    rad = '<img src="https://tbcdn.talentbrew.com/company/543/logo.png">'
+    assert discover(FakeFetcher(html=sf), Company("X", "https://jobs.tetrapak.com/")) == \
+        ("successfactors", "https://jobs.tetrapak.com")
+    assert discover(FakeFetcher(html=rad), Company("H", "https://careers.halliburton.com/location/nl/543/2")) == \
+        ("sitemap", "https://careers.halliburton.com/sitemap.xml")
+
+
+def test_discover_ignores_recruitee_analytics_script():
+    from jobwatch.discover import find_ats_links
+    html = ('<script src="https://careers-analytics.recruitee.com/tracker.js"></script>'
+            '<a href="https://smartphotonics.recruitee.com/o/engineer">Engineer</a>')
+    assert find_ats_links(html) == ("recruitee", "https://smartphotonics.recruitee.com")
+
+
+def test_discover_follows_vacancies_link_from_homepage():
+    from jobwatch.discover import discover
+
+    class F(FakeFetcher):
+        def get(self, url, **kw):
+            self.calls.append(url)
+            if url.endswith("robots.txt") or "sitemap" in url:
+                raise RuntimeError("none")
+            pages = {
+                "https://www.bbio.nl/": '<a href="/products">Products</a><a href="/careers">Careers</a>',
+                "https://www.bbio.nl/careers": '<a href="https://bbio.recruitee.com/o/qa-officer">QA Officer</a>',
+            }
+            return type("R", (), {"text": pages.get(url, ""), "url": url})()
+
+    assert discover(F(), Company("BBio", "https://www.bbio.nl/")) == ("recruitee", "https://bbio.recruitee.com")
+
+
+def test_eightfold_pcsx_paging_and_location():
+    calls = []
+
+    class F(FakeFetcher):
+        def get_json(self, url, **kw):
+            calls.append(url)
+            start = int(url.split("start=")[1].split("&")[0])
+            n = 10 if start == 0 else 2
+            return {"data": {"count": 12, "positions": [
+                {"id": start + i, "name": f"Engineer {start + i}", "locations": ["Delft, Netherlands"],
+                 "positionUrl": f"/careers/job/{start + i}", "postedTs": 1791471702} for i in range(n)]}}
+
+    res = check_company(F(), Company("DSM", "https://dsm.eightfold.ai/careers?domain=dsm.com&location=Netherlands"))
+    assert not res.error and res.method == "eightfold" and len(res.jobs) == 12 and len(calls) == 2
+    assert "api/pcsx/search?domain=dsm.com&start=0" in calls[0] and "location=Netherlands" in calls[0]
+    assert res.jobs[0].url == "https://dsm.eightfold.ai/careers/job/0?domain=dsm.com"
+    assert res.jobs[0].location == "Delft, Netherlands"
+
+
+def test_html_falls_back_to_browser_when_blocked():
+    import requests as rq
+
+    class F(FakeFetcher):
+        allow_render = True
+        def get(self, url, **kw):
+            resp = rq.Response(); resp.status_code = 403
+            raise rq.HTTPError("403 Forbidden", response=resp)
+        def render(self, url):
+            return '<a href="/vacatures/process-engineer-123">Process Engineer</a>'
+
+    res = check_company(F(), Company("Stamicarbon", "https://www.stamicarbon.com/vacancies"))
+    assert not res.error and res.method == "rendered"
+    assert res.jobs[0].title == "Process Engineer"
+
+
+# ------------------------------------------------- second-round fixes (Oct 2026)
+def test_workday_reads_past_second_page_when_later_pages_report_total_zero():
+    def page(off):
+        n = 20 if off < 60 else 5
+        return {"total": 65 if off == 0 else 0,
+                "jobPostings": [{"title": f"E{off + i}", "externalPath": f"/job/{off + i}"} for i in range(n)]}
+    res = check_company(FakeFetcher(post=page), Company("BP", "https://bpinternational.wd3.myworkdayjobs.com/bpCareers"))
+    assert len(res.jobs) == 65
+
+
+def test_explicit_adapter_beats_cached_discovery():
+    from jobwatch.discover import resolve
+    cache = {"discovered": {"from": "https://jobs.tetrapak.com/", "adapter": "html",
+                            "url": "https://jobs.tetrapak.com/", "at": "2099-01-01T00:00:00+00:00"}}
+    c = resolve(FakeFetcher(), Company("TP", "https://jobs.tetrapak.com/", adapter="successfactors"), cache)
+    assert c.adapter == "successfactors"
+
+
+def test_old_cache_entries_are_rediscovered():
+    from jobwatch.discover import resolve
+    sf = '<link rel="icon" href="https://rmkcdn.successfactors.com/x.png">'
+    cache = {"discovered": {"from": "https://jobs.eastman.com/", "adapter": "html",
+                            "url": "https://jobs.eastman.com/", "at": "2099-01-01T00:00:00+00:00"}}
+    c = resolve(FakeFetcher(html=sf), Company("Eastman", "https://jobs.eastman.com/"), cache)
+    assert c.adapter == "successfactors" and cache["discovered"]["v"] >= 2
+
+
+def test_successfactors_falls_back_to_sitemal():
+    class F(FakeFetcher):
+        def get(self, url, **kw):
+            self.calls.append(url)
+            text = SF_RSS if url.endswith("/sitemal.xml") else "<urlset><url><loc>https://x/about</loc></url></urlset>"
+            return type("R", (), {"text": text, "url": url})()
+    f = F()
+    res = check_company(f, Company("FC", "https://mycareers.frieslandcampina.com/", adapter="successfactors"))
+    assert not res.error and len(res.jobs) == 2
+    assert f.calls[-1].endswith("/sitemal.xml")
+
+
+def test_sitemap_adapter_reports_errors_instead_of_zero_jobs():
+    class F(FakeFetcher):
+        def get(self, url, **kw):
+            raise RuntimeError("403 Forbidden")
+    res = check_company(F(), Company("Hal", "https://careers.halliburton.com/sitemap.xml"))
+    assert res.error
+
+
+def test_posted_age_formats():
+    from datetime import datetime, timezone
+    from jobwatch.state import posted_age_days
+    now = datetime(2026, 10, 13, 12, tzinfo=timezone.utc)
+    assert posted_age_days("2026-10-12", now) == 1.5
+    assert posted_age_days("Posted Today", now) == 0
+    assert posted_age_days("Posted 30+ Days Ago", now) > 3
+    assert round(posted_age_days("1791720000", now)) == round((now.timestamp() - 1791720000) / 86400)
+    assert posted_age_days("Mon, 12 Oct 2026 12:00:00 GMT", now) == 1
+    assert posted_age_days("", now) is None and posted_age_days("soon", now) is None
+
+
+def test_rebaseline_still_reports_recent_postings(tmp_path):
+    from datetime import date
+    st = State(tmp_path / "s.json")
+    today = date.today().isoformat()
+    jobs = [Job("McD", "Associate Process Engineer", "u1", posted=today, id="1"),
+            Job("McD", "Old job", "u2", posted="2026-01-01", id="2"),
+            Job("McD", "No date", "u3", id="3")]
+    assert [j.id for j in st.new_jobs("McD", jobs, source="feed-a")] == ["1"]
+    assert st.new_jobs("McD", jobs, source="feed-a") == []          # seen now
+    assert [j.id for j in st.new_jobs("McD", jobs, source="feed-b")] == ["1"]  # feed switch
+
+
+# ------------------------------------------------------ repeat recent alerts
+def test_alerts_repeat_jobs_shown_in_last_24h(tmp_path):
+    from datetime import datetime, timedelta, timezone
+    st = State(tmp_path / "s.json")
+    a = Job("McD", "Associate Process Engineer", "u1", "The Hague, Netherlands", id="1")
+    st.remember_shown([a])
+    assert st.shown_within(24) and st.shown_within(24)[0].repeat
+    assert st.shown_within(24, exclude={("McD", "1")}) == []
+    assert st.shown_within(0) == []
+    # older than 24h -> no longer repeated
+    st.data["shown"][0]["found"] = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat(timespec="seconds")
+    assert st.shown_within(24) == []
+    st.save()
+    assert State(tmp_path / "s.json").data["shown"]  # kept on disk (48h) until pruned
+
+
+def test_email_lists_repeats_after_new_jobs():
+    new = [Job("Tetra Pak", "Service Engineer Trainee", "https://t/1", "Utrecht")]
+    rep = [Job("McD", "Associate Process Engineer", "https://m/1", "The Hague", repeat=True, found="Tue 13:05")]
+    subject, text, html_body = notify.build_email(new, repeats=rep)
+    assert "1 new posting" in subject and "+1 from the last 24h" in subject
+    assert text.index("Service Engineer Trainee") < text.index("Already shown in the last 24 hours")
+    assert "first shown Tue 13:05" in text and "Already shown" in html_body
+
+
+# ------------------------------------------------- location: NL / BE / India only
+from jobwatch.filters import location_verdict, resolve_location  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "title,location,url,expected",
+    [
+        # location field, incl. other languages
+        ("Production Engineer", "Tilburg, Paesi Bassi", "u", "keep"),
+        ("Data Analysis Scientist", "Uppsala, Svezia", "u", "drop"),
+        ("Field Service Engineer", "Hemel Hempstead, Regno Unito", "u", "drop"),
+        ("Chemist I", "Gdynia, Poland", "u", "drop"),
+        ("Engineer II, Hardware", "Hyderabad, India", "u", "drop"),  # India no longer wanted (2026-11-03)
+        ("Process Engineer", "Rotterdam; Houston, TX", "u", "keep"),       # a wanted place wins
+        ("Process Engineer", "Liège", "u", "keep"),
+        # only the title says where
+        ("Scientist - Cell Culture in San Diego, California, Stati Uniti d'America", "", "u", "drop"),
+        ("St Louis Digital and Automation Project Engineer MO", "", "u", "drop"),
+        ("Shanghai Mechanical Engineer", "", "u", "drop"),
+        # only the link says where (Workday)
+        ("Chemical Engineer", "", "https://x.wd3.myworkdayjobs.com/C/job/Veldhoven-Netherlands/CE_1", "keep"),
+        ("Chemical Engineer", "", "https://x.wd3.myworkdayjobs.com/C/job/Houston-Texas/CE_1", "drop"),
+        # locale codes in a link are not a location
+        ("Manufacturing Engineer", "", "https://careers.slb.com/jobdescription.aspx?id=EF21350-en_US", "unknown"),
+        ("Manufacturing Engineer", "", "u", "unknown"),
+    ],
+)
+def test_location_verdict(settings, title, location, url, expected):
+    assert location_verdict(Job("X", title, url, location=location), settings) == expected
+
+
+def test_unknown_location_resolved_from_job_page(settings):
+    assert settings.keep_unmatched_locations is False
+    us = Job("SLB", "Manufacturing Engineer", "https://careers.slb.com/job?id=1",
+             description="Join our team in Houston. Location: United States. " * 20)
+    assert not resolve_location(us, settings)
+    nl = Job("SLB", "Manufacturing Engineer", "https://careers.slb.com/job?id=2",
+             description="Based at our site in the Netherlands. " * 20)
+    assert resolve_location(nl, settings) and nl.location
+    dutch = Job("Tata", "Procestechnoloog", "https://careers.example.com/job/3",
+                description=("Als procestechnoloog ben jij verantwoordelijk voor het verbeteren van onze installaties. "
+                             "Wij bieden een goed salaris en je werkt met een team van specialisten bij ons. "
+                             "Je hebt een afgeronde opleiding en werkervaring is een pluspunt voor deze functie. ") * 3)
+    assert resolve_location(dutch, settings)
+    nothing = Job("SLB", "Manufacturing Engineer", "https://careers.slb.com/job?id=4", description="Great job. " * 50)
+    assert not resolve_location(nothing, settings)               # strict: unknown -> dropped
+    assert resolve_location(Job("VDL", "Engineer", "https://www.werkenbijvdl.nl/vacature/1"), settings)  # .nl site
+
+
+def test_run_drops_foreign_and_keeps_dutch(tmp_path, monkeypatch):
+    """End to end: a sitemap company with one Dutch and one US posting, location only on the job page."""
+    import jobwatch.cli as cli
+    pages = {
+        "https://acme.com/job/1": '<html><h1>Process Engineer</h1><p>' + "Location: Geleen, Netherlands. " * 20 + '</p></html>',
+        "https://acme.com/job/2": '<html><h1>Process Engineer</h1><p>' + "Location: Baton Rouge, United States. " * 20 + '</p></html>',
+    }
+    from jobwatch.models import CheckResult
+    jobs = [Job("Acme", "Process Engineer", u) for u in pages]
+
+    class F:
+        allow_render = False
+        def __init__(self, *a, **k): pass
+        def get(self, url):
+            class R: text = pages[url]
+            return R()
+        def close(self): pass
+
+    calls = {"n": 0}
+    def fake_check(f, src, n):
+        calls["n"] += 1
+        return CheckResult(Company("Acme", "https://acme.com"), jobs=jobs if calls["n"] > 1 else jobs[:0], method="sitemap")
+    monkeypatch.setattr(cli, "Fetcher", F)
+    monkeypatch.setattr(cli, "check_company", fake_check)
+    monkeypatch.setattr(cli, "resolve", lambda f, c, cache, force=False: type("S", (), {"adapter": "sitemap", "url": c.url})())
+    csv = tmp_path / "c.csv"
+    csv.write_text("name,priority,group,url,enabled\nAcme,High,x,https://acme.com,yes\n", encoding="utf-8")
+    args = ["run", "--config", str(ROOT / "config.yaml"), "--companies", str(csv),
+            "--state", str(tmp_path / "s.json"), "--notify", "none"]
+    assert main(args) == 0                     # baseline
+    out = []
+    monkeypatch.setattr(cli.notify, "build_email", lambda new, errors, repeats=None: out.append(new) or ("s", "t", "h"))
+    assert main(args) == 0
+    assert [j.url for j in out[0]] == ["https://acme.com/job/1"]
+
+
+def test_dedupe_same_job_listed_twice():
+    from jobwatch.cli import _dedupe
+    jobs = [Job("Tata Steel IJmuiden", "Technologist", "https://www.tatasteeljobs.nl/vacature/768/t", "Nederland"),
+            Job("Tata Steel Technology", "Technologist", "https://www.tatasteeljobs.nl/vacature/768/t", "Nederland"),
+            Job("Lamb Weston", "QA Engineer", "https://lambweston.eu/nl/careers/vacancies/Kruiningen/QA/1"),
+            Job("Lamb Weston", "QA Engineer", "https://lambweston.eu/de/careers/vacancies/Kruiningen/QA/1"),
+            Job("Lamb Weston", "QA Engineer", "https://lambweston.eu/careers/vacancies/Bergen-op-Zoom/QA/2", "Bergen op Zoom")]
+    assert [j.url.rsplit("/", 2)[-2:] for j in _dedupe(jobs)] == [["768", "t"], ["QA", "1"], ["QA", "2"]]
+
+
+def test_werken_bij_and_careers_company_links():
+    # Colsen: /werken-bij-colsen/<slug> (NL) and /en/careers-colsen/<slug> (EN)
+    from jobwatch.adapters import parse_html_jobs
+    html = '<html><body>' \
+           '<a href="/werken-bij-colsen/process-engineer">Process Engineer</a>' \
+           '<a href="/en/careers-colsen/project-engineer">Project Engineer</a>' \
+           '<a href="/werken-bij-colsen">Werken bij</a>' \
+           '<a href="/over-ons/team">Ons team en cultuur</a></body></html>'
+    urls = [j.url for j in parse_html_jobs(html, "https://www.colsen.nl/werken-bij-colsen", "Colsen")]
+    assert urls == ["https://www.colsen.nl/werken-bij-colsen/process-engineer",
+                    "https://www.colsen.nl/en/careers-colsen/project-engineer"]
+
+
+# ------------------------------------------------- generic titles: read the description
+def test_generic_titles_kept_only_if_description_asks_for_chemical_background(tmp_path, monkeypatch):
+    companies = tmp_path / "companies.csv"
+    companies.write_text(
+        "name,priority,group,url,enabled,adapter,render,link_type,note\n"
+        "Example,High,Chemicals,https://example.com/vacatures,yes,auto,never,Careers page,\n",
+        encoding="utf-8",
+    )
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text(
+        "include_keywords: [engineer, junior, process engineer]\n"
+        "exclude_keywords: [senior]\n"
+        "favourite_keywords: [process engineer]\n"
+        "only_favourites: true\n"
+        "check_description: true\n"
+        "description_keywords: [chemical engineering, chemische technologie]\n"
+        "check_experience: false\n"
+        "location_keywords: [netherlands, rotterdam]\n"
+        "keep_unmatched_locations: false\n",
+        encoding="utf-8",
+    )
+    pages = {
+        "https://example.com/vacatures": HTML,
+        "https://example.com/vacatures/engineer-1": "<p>Your profile: MSc in Chemical Engineering or similar. Rotterdam, Netherlands.</p>",
+        "https://example.com/vacatures/junior-engineer-2": "<p>Je hebt een wo-opleiding Chemische Technologie. Rotterdam, Netherlands.</p>",
+        "https://example.com/vacatures/engineer-3": "<p>We are a chemical company. You have a BSc in Electrical Engineering. Rotterdam, Netherlands.</p>",
+        "https://example.com/vacatures/process-engineer-4": "<p>Rotterdam, Netherlands.</p>",
+    }
+
+    def fake_get(self, url, **kw):
+        if url not in pages:
+            raise ConnectionError("unreachable")
+        return type("R", (), {"text": pages[url], "url": url})()
+
+    monkeypatch.setattr("jobwatch.fetch.Fetcher.get", fake_get)
+    emails = []
+    monkeypatch.setattr(notify, "send_email", lambda *a: emails.append(a) or True)
+    args = ["--config", str(cfg), "--companies", str(companies), "--state", str(tmp_path / "state.json"),
+            "--no-render"]
+    assert main(["run", *args]) == 0                      # baseline
+    pages["https://example.com/vacatures"] = HTML.replace(
+        "</ul>",
+        '<li><a href="/vacatures/engineer-1">Engineer</a></li>'
+        '<li><a href="/vacatures/junior-engineer-2">Junior Engineer</a></li>'
+        '<li><a href="/vacatures/engineer-3">Electrical Engineer</a></li>'
+        '<li><a href="/vacatures/process-engineer-4">Process Engineer</a></li></ul>')
+    assert main(["run", *args]) == 0
+    _, text, _ = emails[0]
+    assert "⭐ Process Engineer" in text                                  # field word in title
+    assert "Engineer (" in text and "description: chemical engineering" in text  # generic title, ChemE asked
+    assert "Junior Engineer" in text and "description: chemische technologie" in text
+    assert "Electrical Engineer" not in text                             # 'chemical company' isn't enough
+
+
+# ------------------------------------------------------------- Dutch language check
+@pytest.mark.parametrize("text,expected", [
+    ("Fluent in Dutch and English is required.", "required"),
+    ("You speak Dutch fluently and have good English.", "required"),
+    ("Dutch at C1 level is mandatory.", "required"),
+    ("Je spreekt vloeiend Nederlands en Engels.", "required"),
+    ("Goede beheersing van de Nederlandse en Engelse taal in woord en geschrift.", "required"),
+    ("Fluent Dutch required; German is a plus.", "required"),
+    ("Fluent English is required. Dutch is a plus.", "lenient"),
+    ("Fluent Dutch is a plus but not required.", "lenient"),
+    ("Basic knowledge of Dutch (A2) is sufficient.", "lenient"),
+    ("Intermediate Dutch (B1/B2) is fine.", "lenient"),
+    ("You are willing to learn Dutch.", "lenient"),
+    ("Kennis van de Nederlandse taal is een pré.", "lenient"),
+    ("Join a leading Dutch company in the port of Rotterdam.", ""),
+    ("", ""),
+])
+def test_dutch_requirement(text, expected):
+    from jobwatch.filters import dutch_requirement
+    assert dutch_requirement(text) == expected
+
+
+def test_run_skips_jobs_asking_fluent_dutch(tmp_path, monkeypatch):
+    companies = tmp_path / "companies.csv"
+    companies.write_text(
+        "name,priority,group,url,enabled,adapter,render,link_type,note\n"
+        "Example,High,Chemicals,https://example.com/vacatures,yes,auto,never,Careers page,\n",
+        encoding="utf-8",
+    )
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text(
+        "include_keywords: [process engineer]\nfavourite_keywords: [process engineer]\n"
+        "skip_if_fluent_dutch_required: true\ncheck_experience: false\n"
+        "location_keywords: [netherlands]\nkeep_unmatched_locations: false\n",
+        encoding="utf-8",
+    )
+    pages = {
+        "https://example.com/vacatures": HTML,
+        "https://example.com/vacatures/pe-1": "<p>Je spreekt vloeiend Nederlands. Rotterdam, Netherlands.</p>",
+        "https://example.com/vacatures/pe-2": "<p>Fluent English required. Basic Dutch is a plus. Rotterdam, Netherlands.</p>",
+        "https://example.com/vacatures/pe-3": "<p>English speaking team. Rotterdam, Netherlands.</p>",
+    }
+
+    def fake_get(self, url, **kw):
+        if url not in pages:
+            raise ConnectionError("unreachable")
+        return type("R", (), {"text": pages[url], "url": url})()
+
+    monkeypatch.setattr("jobwatch.fetch.Fetcher.get", fake_get)
+    emails = []
+    monkeypatch.setattr(notify, "send_email", lambda *a: emails.append(a) or True)
+    args = ["--config", str(cfg), "--companies", str(companies), "--state", str(tmp_path / "s.json"), "--no-render"]
+    assert main(["run", *args]) == 0
+    pages["https://example.com/vacatures"] = HTML.replace(
+        "</ul>",
+        '<li><a href="/vacatures/pe-1">Process Engineer Dutch</a></li>'
+        '<li><a href="/vacatures/pe-2">Process Engineer Basic</a></li>'
+        '<li><a href="/vacatures/pe-3">Process Engineer English</a></li></ul>')
+    assert main(["run", *args]) == 0
+    _, text, _ = emails[0]
+    assert "Process Engineer Dutch" not in text
+    assert "Process Engineer Basic" in text and "basic Dutch OK" in text
+    assert "Process Engineer English" in text
+
+
+# ------------------------------------------- live page next to a stale sitemap
+SITEMAP_JOBS = "<urlset>" + "".join(
+    f"<url><loc>https://acme.nl/vacature/{n}/{t}</loc></url>"
+    for n, t in [(770, "operator-rd"), (771, "prototypebouwer"), (772, "teamleider-productie"),
+                 (773, "hogere-veiligheidskundige")]) + "</urlset>"
+LIVE_PAGE = ('<ul><li><a href="/vacature/786/young-professional-process-innovation-technologist">'
+             'Young Professional Process Innovation Technologist</a></li>'
+             '<li><a href="/vacature/773/hogere-veiligheidskundige">Hogere Veiligheidskundige</a></li>'
+             '<li><a href="/vacatures/vakgebieden/research-development">Research &amp; Development jobs</a></li>'
+             '<li><a href="/nieuws/2026/open-dag-ijmuiden">Open dag IJmuiden vacature-event</a></li></ul>')
+
+
+def test_job_path_prefix():
+    from jobwatch.adapters import _job_path_prefix
+    assert _job_path_prefix("https://www.acme.nl/vacature/786/young-pro") == ("acme.nl", "/vacature")
+    assert _job_path_prefix("https://acme.nl/nl/vacatures/process-engineer") == ("acme.nl", "/nl/vacatures")
+
+
+def test_live_page_extras_finds_jobs_missing_from_sitemap():
+    from jobwatch.adapters import fetch_sitemap, live_page_extras
+    f = SiteFetcher({"https://acme.nl/sitemap.xml": SITEMAP_JOBS, "https://acme.nl/vacatures": LIVE_PAGE})
+    sm = fetch_sitemap(f, Company("Acme", "https://acme.nl/sitemap.xml", adapter="sitemap"))
+    extras = live_page_extras(f, Company("Acme", "https://acme.nl/vacatures"), sm)
+    assert [j.url for j in extras] == ["https://acme.nl/vacature/786/young-professional-process-innovation-technologist"]
+    assert extras[0].title == "Young Professional Process Innovation Technologist"
+    # an .xml careers URL, or an unreachable page, adds nothing (and never raises out of the run)
+    assert live_page_extras(f, Company("Acme", "https://acme.nl/sitemap.xml"), sm) == []
+
+
+def test_run_alerts_job_on_live_page_before_sitemap_has_it(tmp_path, monkeypatch):
+    import dataclasses
+    import jobwatch.cli as cli
+    companies = tmp_path / "companies.csv"
+    companies.write_text("name,priority,group,url,enabled,adapter,render,link_type,note\n"
+                         "Acme,High,Metals,https://acme.nl/vacatures,yes,auto,never,Careers page,\n", encoding="utf-8")
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text(Path("config.yaml").read_text(encoding="utf-8").replace(
+        "check_description: true", "check_description: false"), encoding="utf-8")
+    pages = {"https://acme.nl/sitemap.xml": SITEMAP_JOBS,
+             "https://acme.nl/vacatures": LIVE_PAGE.replace(
+                 '<li><a href="/vacature/786/young-professional-process-innovation-technologist">'
+                 'Young Professional Process Innovation Technologist</a></li>', ""),
+             "https://acme.nl/vacature/786/young-professional-process-innovation-technologist":
+                 "<p>Locatie: IJmuiden, Nederland. Opleiding: chemical engineering.</p>"}
+
+    def fake_get(self, url, **kw):
+        if url not in pages:
+            raise ConnectionError("unreachable")
+        return type("R", (), {"text": pages[url], "url": url})()
+
+    monkeypatch.setattr("jobwatch.fetch.Fetcher.get", fake_get)
+    monkeypatch.setattr(cli, "resolve", lambda f, c, cache, force=False:
+                        dataclasses.replace(c, adapter="sitemap", url="https://acme.nl/sitemap.xml"))
+    emails = []
+    monkeypatch.setattr(notify, "send_email", lambda *a: emails.append(a) or True)
+    args = ["--companies", str(companies), "--state", str(tmp_path / "state.json"),
+            "--config", str(cfg), "--no-render"]
+    assert main(["run", *args]) == 0                     # baseline
+    assert emails == []
+    pages["https://acme.nl/vacatures"] = LIVE_PAGE       # posted this morning; sitemap still old
+    assert main(["run", *args]) == 0
+    assert len(emails) == 1 and "Young Professional Process Innovation Technologist" in emails[0][1]
