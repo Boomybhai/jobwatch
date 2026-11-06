@@ -197,6 +197,15 @@ VACANCY_TEXT_RE = re.compile(r"vacature|vacanc|bekijk.*(vacature|job)|all jobs|a
                              r"werken bij|careers?\b|jobs\b", re.I)
 
 
+LANG_SEG_RE = re.compile(r"^/([a-z]{2}(?:[-_][a-z]{2})?)(?:/|$)", re.I)
+
+
+def _lang_of(path: str) -> str | None:
+    """'/nl-nl/vacatures' -> 'nl-nl', '/careers' -> None."""
+    m = LANG_SEG_RE.match(path or "/")
+    return m.group(1).lower() if m else None
+
+
 def vacancy_link(html: str, url: str) -> str | None:
     """Best 'see all vacancies' link on a homepage/landing page, on the same site or a jobs subdomain."""
     soup = BeautifulSoup(html, "lxml")
@@ -219,6 +228,9 @@ def vacancy_link(html: str, url: str) -> str | None:
         same_site = parts.netloc.endswith(root)
         if not same_site and not any(rx.search(href) for _, rx in ATS_PATTERNS):
             continue  # don't wander off to LinkedIn, news sites, ...
+        if same_site and _lang_of(parts.path) and _lang_of(parts.path) != _lang_of(here.path) \
+                and _lang_of(here.path) is not None:
+            continue  # the same page in another language (/fr/carrieres when we're on /en/careers)
         if re.search(r"vacature|vacanc|jobs?\b|openings|positions", text + parts.path, re.I):
             score += 1
         if score > best_score:
@@ -273,13 +285,18 @@ def discover(f: Fetcher, company: Company, _depth: int = 0) -> tuple[str, str]:
         if nxt:
             import dataclasses
             log.info("    %s: no jobs on %s - following %s", company.name, company.url, nxt)
-            return discover(f, dataclasses.replace(company, url=nxt), _depth=1)
+            adapter, url = discover(f, dataclasses.replace(company, url=nxt), _depth=1)
+            if adapter != "html" or url:  # found a job system, a sitemap or a page with jobs
+                return adapter, url
+            log.info("    %s: no jobs on %s either - staying on %s", company.name, nxt, company.url)
+    if on_page == 0 and _depth == 1:
+        return "html", ""  # tell the caller this page wasn't better
     return "html", company.url
 
 
 # -------------------------------------------------------------------- cache
 REDISCOVER_DAYS = 14
-DISCOVER_VERSION = 2  # bump when discovery learns new tricks, so cached results are refreshed
+DISCOVER_VERSION = 3  # bump when discovery learns new tricks, so cached results are refreshed
 
 
 def resolve(f: Fetcher, company: Company, cache: dict, force: bool = False) -> Company:
@@ -292,7 +309,9 @@ def resolve(f: Fetcher, company: Company, cache: dict, force: bool = False) -> C
     now = datetime.now(timezone.utc)
     hit = cache.get("discovered")
     fresh = False
-    if hit and hit.get("from") == company.url and hit.get("v") == DISCOVER_VERSION and not force:
+    # companies that already produce jobs keep an older-version result; ones that never did look again
+    version_ok = hit and (hit.get("v") == DISCOVER_VERSION or (cache.get("seen") and hit.get("v", 0) >= 2))
+    if hit and hit.get("from") == company.url and version_ok and not force:
         try:
             fresh = now - datetime.fromisoformat(hit["at"]) < timedelta(days=REDISCOVER_DAYS)
         except Exception:

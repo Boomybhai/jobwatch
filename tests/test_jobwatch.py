@@ -1193,3 +1193,31 @@ def test_run_alerts_job_on_live_page_before_sitemap_has_it(tmp_path, monkeypatch
     pages["https://acme.nl/vacatures"] = LIVE_PAGE       # posted this morning; sitemap still old
     assert main(["run", *args]) == 0
     assert len(emails) == 1 and "Young Professional Process Innovation Technologist" in emails[0][1]
+
+
+# ------------------------------------------------ discovery: don't get stuck on a wrong page
+def test_vacancy_link_skips_other_language_versions():
+    from jobwatch.discover import vacancy_link
+    html = ('<a href="/fr/carrieres">Carrières</a><a href="/de/karriere">Karriere</a>'
+            '<a href="/en/careers/vacancies">Vacancies</a>')
+    assert vacancy_link(html, "https://acme.com/en/careers") == "https://acme.com/en/careers/vacancies"
+
+
+def test_discover_stays_on_page_when_followed_link_has_no_jobs_either():
+    from jobwatch.discover import discover
+    pages = {"https://acme.com/careers": '<p>We are hiring!</p><a href="/careers/our-culture">Working at Acme: careers</a>',
+             "https://acme.com/careers/our-culture": "<p>Great people, nice coffee.</p>"}
+    f = SiteFetcher(pages)
+    assert discover(f, Company("Acme", "https://acme.com/careers")) == ("html", "https://acme.com/careers")
+
+
+def test_resolve_rediscovers_only_companies_without_jobs():
+    from jobwatch.discover import resolve
+    old = {"from": "https://acme.com/careers", "adapter": "html", "url": "https://acme.com/careers/x",
+           "at": "2099-01-01T00:00:00+00:00", "v": 2}
+    working = {"seen": {"https://acme.com/job/1": "t"}, "discovered": dict(old)}
+    c = Company("Acme", "https://acme.com/careers")
+    assert resolve(SiteFetcher({}), c, working).url == "https://acme.com/careers/x"   # untouched
+    empty = {"seen": {}, "discovered": dict(old)}
+    f = SiteFetcher({"https://acme.com/careers": '<a href="/vacature/12/process-engineer">Process engineer</a>'})
+    assert resolve(f, c, empty).url == "https://acme.com/careers"                       # looked again
