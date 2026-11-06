@@ -8,7 +8,7 @@ Aspen Oss B.V.,High,"Pharma, biotech & medtech",https://werkenbijaspen.nl/vacatu
 Avantium Chemicals B.V.,High,Startups & scale-ups,https://job-boards.greenhouse.io/avantium,yes,auto,auto,Careers page,
 BlueAlp Production B.V.,High,Startups & scale-ups,https://www.bluealp.nl/careers/,yes,auto,auto,Careers page,
 BP Raffinaderij Rotterdam B.V.,High,"Energy, fuels & gases",https://bpinternational.wd3.myworkdayjobs.com/bpCareers,yes,auto,auto,Workday job board,
-Carbyon B.V.,High,Startups & scale-ups,https://careers.carbyon.com/open-positions,yes,recruitee,auto,Careers page (has an open application),
+Carbyon B.V.,High,Startups & scale-ups,https://carbyon.recruitee.com,yes,recruitee,auto,Recruitee job feed,
 Cargill B.V.,High,Food ingredients & agri-processing,https://careers.cargill.com/en/location/netherlands-jobs/23251/2750405/2,yes,auto,auto,Careers page (NL),
 Centrient Pharmaceuticals Netherlands B.V.,High,"Pharma, biotech & medtech",https://www.centrient.com/careers,yes,auto,auto,Careers page,
 ChainCraft B.V.,High,Startups & scale-ups,https://chaincraft.com/careers/job-offers/,yes,auto,auto,Careers page,
@@ -96,7 +96,7 @@ BASF Nederland B.V.,Medium,Chemicals & process,https://www.basf.com/nl/nl/career
 Battolyser B.V.,Medium,Startups & scale-ups,https://www.alquion.com/careers,yes,auto,auto,Careers page (now Alquion: Battolyser Systems + VDL Hydrogen Systems),DEAD LINK Oct 2026 (careers page 404) - needs a new careers URL
 Bilfinger Engineering Netherlands B.V.,Medium,"Engineering, consulting & inspection",https://jobs.bilfinger.com/go/Werken-in-onze-engineeringafdeling/3977501/,yes,auto,auto,Careers page (engineering),
 Bilthoven Biologicals B.V.,Medium,"Pharma, biotech & medtech",https://www.bbio.nl/careers,yes,auto,auto,Careers page,
-Bioclear earth B.V.,Medium,Startups & scale-ups,https://bioclearearth.nl/over-ons,yes,auto,auto,Careers info (vacancies listed under Over ons),
+Bioclear earth B.V.,Medium,Startups & scale-ups,https://bioclearearth.nl/over-ons/vacatures,yes,auto,auto,Vacancies page,
 Bluewater Energy Services B.V.,Medium,Offshore & upstream,https://careers.bluewater.com/jobs,yes,auto,auto,Careers page,
 Bunge Loders Croklaan B.V.,Medium,Food ingredients & agri-processing,https://jobs.bunge.com/,yes,auto,auto,Careers page (global — filter Netherlands),careers URL found by web search 2026-11-03
 Bureau Veritas Inspection and Certification The Netherlands B.V.,Medium,"Engineering, consulting & inspection",https://benelux.bureauveritas.com/vacatures,yes,auto,auto,Careers page (NL),careers URL found by web search 2026-11-03
@@ -159,7 +159,6 @@ Lummus Technology Heat Transfer B.V.,Medium,Chemicals & process,https://careers.
 McCain Foods Holland B.V.,Medium,FMCG & food,https://careers.mccain.com/nl/nl/,yes,auto,auto,Careers page (NL),careers URL found by web search 2026-11-03
 Mead Johnson B.V.,Medium,Chemicals & process,https://careers.reckitt.com/,yes,auto,auto,Careers page (filter: Nijmegen),
 Meatable B.V.,Medium,Startups & scale-ups,https://www.meatable.com/careers/,yes,auto,auto,Careers page (currently only an open application),
-MGC Specialty Chemicals Netherlands B.V.,Medium,Chemicals & process,https://www.mgc.co.jp/eng/,yes,auto,auto,Website (parent group),
 Momentive Performance Materials Silicones B.V.,Medium,Chemicals & process,https://momentive.wd1.myworkdayjobs.com/MC,yes,auto,auto,Workday job board,
 Mondi Maastricht N.V.,Medium,Paper & packaging,https://www.mondigroup.com/careers/,yes,auto,auto,Careers page,
 Mosa Meat,Medium,Startups & scale-ups,https://mosameat.com/careers,yes,auto,auto,Careers page,careers URL found by web search 2026-11-03
@@ -175,7 +174,7 @@ Novonesis Nederland B.V.,Medium,Chemicals & process,https://www.novonesis.com/en
 NRG PALLAS B.V.,Medium,"Energy, fuels & gases",https://www.pallasreactor.com/werken-bij-nrg-pallas,yes,auto,auto,Careers page,
 NXFiltration,Medium,Chemicals & process,https://nxfiltration.recruitee.com/,yes,auto,auto,Careers page (Recruitee),
 Oasen N.V.,Medium,"Water, waste & circular",https://www.werkenbijoasen.nl/nl-nl/vacatures,yes,auto,auto,Careers page (NL),careers URL found by web search 2026-11-03
-OLAM Cocoa,Medium,Food ingredients & agri-processing,https://ofi-careers.com/,yes,auto,auto,ofi careers site,
+OLAM Cocoa,Medium,Food ingredients & agri-processing,https://careers.ofi.com,yes,successfactors,auto,SuccessFactors job feed (global — filter Netherlands),
 Olenex Edible Oils B.V.,Medium,"Energy, fuels & gases",https://olenex.recruitee.com/,yes,auto,auto,Careers page (Recruitee),
 ONE-Dyas B.V.,Medium,Offshore & upstream,https://onedyas.com/careers/,yes,auto,auto,Careers page,
 Owens-Corning Veil Netherlands B.V.,Medium,"Coatings, materials & composites",https://www.werkenbijowenscorning.nl/vacatures/,yes,auto,auto,Careers page (Apeldoorn),
@@ -192,7 +191,7 @@ Prothya Biosolutions Netherlands B.V.,Medium,Chemicals & process,https://www.pro
 Purac Biochem B.V.,Medium,Chemicals & process,https://jobs.corbion.com,yes,successfactors,auto,"SuccessFactors job feed (Corbion, global — filter Netherlands)",
 Remat Chemie B.V.,Medium,Chemicals & process,https://www.rematchemie.nl/vacatures/,yes,auto,auto,Careers page (NL),careers URL found by web search 2026-11-03
 Renewi Nederland B.V.,Medium,"Water, waste & circular",https://careers.renewi.com/nl-nl,yes,auto,auto,Careers page,
-Rockwool B.V.,Medium,"Coatings, materials & composites",https://werkenbijrockwoolroermond.nl/,yes,auto,auto,Careers page (Roermond),
+Rockwool B.V.,Medium,"Coatings, materials & composites",https://rockwoolgroup.wd3.myworkdayjobs.com/ROCKWOOL,yes,workday,auto,Workday job feed (global — filter Netherlands),
 Rousselot B.V.,Medium,Chemicals & process,https://www.rousselot.com/careers,yes,auto,auto,Careers page,
 Royal Swinkels N.V.,Medium,FMCG & food,https://royalswinkels.com/en/career/vacancies,yes,auto,auto,Careers page,
 RWE Generation NL Personeel B.V.,Medium,"Energy, fuels & gases",https://benelux.rwe.com/en/careers/,yes,auto,auto,Careers page (Benelux),careers URL found by web search 2026-11-03
@@ -342,7 +341,7 @@ Solenis Netherlands B.V.,Low,"Water, waste & circular",https://www.solenis.com/e
 Sonac Vuren B.V.,Low,Chemicals & process,https://www.sonac.biz/,yes,auto,auto,Website,
 Spiral Hydrogen,Low,"Energy, fuels & gases",https://www.spiralhydrogen.com/careers,yes,auto,auto,Careers page,careers URL found by web search 2026-11-03
 SPX Flow Technology Assen B.V.,Low,Process equipment & instrumentation,https://www.spxflow.com/about/careers/,yes,auto,auto,Careers page (global — filter Netherlands),careers URL found by web search 2026-11-03
-Stichting Deltares,Low,"Water, waste & circular",https://join.com/companies/deltares,yes,auto,auto,JOIN job board,
+Stichting Deltares,Low,"Water, waste & circular",https://careers.deltares.nl/nl/vacatures,yes,auto,auto,Vacancies page (careers.deltares.nl),
 Stichting Thermoplastic Composites Research Center,Low,"Coatings, materials & composites",https://www.tprc.nl/,yes,auto,auto,Website,
 Synova Renewable Technology B.V.,Low,"Water, waste & circular",https://www.synovapower.com/,yes,auto,auto,Website,
 Tanatex Chemicals B.V.,Low,Chemicals & process,https://www.tanatexchemicals.com/,yes,auto,auto,Website,
@@ -428,7 +427,6 @@ IPSS Engineering B.V.,Medium,"Engineering, consulting & inspection",https://www.
 ProcessMinded B.V.,Medium,"Engineering, consulting & inspection",https://processminded.nl/werken-bij/,yes,auto,auto,Careers page (NL),IND recognised sponsor; process engineering consultancy (added in register sweep 2026-11-03)
 A-Gas Nederland B.V.,Medium,Chemicals & process,https://www.agas.com/nl/about-us/careers/open-positions/,yes,auto,auto,Careers page (NL),"IND recognised sponsor; refrigerant gas recovery/reclamation, Eygelshoven (added in register sweep 2026-11-03)"
 Ashland Industries Nederland B.V.,Medium,Chemicals & process,https://ashland.wd12.myworkdayjobs.com/AshlandCareers1,yes,auto,auto,Careers page (global — filter Netherlands),IND recognised sponsor; specialty chemicals (added in register sweep 2026-11-03)
-BRB Lube oil Additives & Chemicals B.V.,Medium,Chemicals & process,https://brb-international.com/en,yes,auto,auto,Website (no careers page found),"IND recognised sponsor; lube additives & silicones, Roermond (added in register sweep 2026-11-03)"
 Cytec Industries B.V.,Medium,Chemicals & process,https://www.syensqo.com/en/career/job-opportunities,yes,auto,auto,Careers page (global — filter Netherlands),IND recognised sponsor; now Syensqo — specialty chemicals/materials (added in register sweep 2026-11-03)
 Elementis Minerals B.V.,Medium,Chemicals & process,https://www.elementis.com/careers/,yes,auto,auto,Careers page (global — filter Netherlands),"IND recognised sponsor; specialty chemicals plant, Delden (added in register sweep 2026-11-03)"
 Quaker Chemical B.V.,Medium,Chemicals & process,https://careers.quakerhoughton.com/jobs/netherlands,yes,auto,auto,Careers page (Netherlands),"IND recognised sponsor; industrial process fluids, Uithoorn (added in register sweep 2026-11-03)"
@@ -474,7 +472,6 @@ S.C. Johnson Europlant B.V.,Medium,FMCG & food,https://jobs.scjohnson.com/en/loc
 Vandemoortele Brunssum B.V.,Medium,FMCG & food,https://careers.vandemoortele.com/,yes,auto,auto,Careers page (global — filter Netherlands),"IND recognised sponsor; bakery & margarine plant, Brunssum"
 VION Food Nederland B.V.,Low,FMCG & food,https://werkenbijvion.nl/,yes,auto,auto,Careers page (NL),IND recognised sponsor; meat processing
 Plukon Food Group B.V.,Low,FMCG & food,https://jobs.plukon.nl/vacatures,yes,auto,auto,Careers page (NL),IND recognised sponsor; poultry processing
-Vivera B.V.,Medium,FMCG & food,https://vivera.com/nl/vivera/,yes,auto,auto,Website (no careers page found),"IND recognised sponsor; plant-based meat production, Holten"
 Zeelandia H.J. Doeleman B.V.,Medium,Food ingredients & agri-processing,https://www.zeelandia.nl/werken_bij,yes,auto,auto,Careers page (NL),"IND recognised sponsor; bakery ingredients, Zierikzee"
 Tony's Factory B.V.,Low,FMCG & food,https://jobs.tonyschocolonely.com/,yes,auto,auto,Careers page,IND recognised sponsor; chocolate (incl. Zaandam factory); many roles need Dutch
 Koninklijke Verkade N.V.,Medium,FMCG & food,https://www.koninklijkeverkade.nl/vacatures/,yes,auto,auto,Careers page (NL),"IND recognised sponsor; biscuits & chocolate plant, Zaandam (pladis)"

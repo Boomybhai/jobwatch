@@ -207,6 +207,14 @@ def _lang_of(path: str) -> str | None:
     return m.group(1).lower() if m else None
 
 
+# the last path segment of a page that lists vacancies (not a single job): /careers, /nl/vacatures/, /join-us ...
+LISTING_PAGE_RE = re.compile(
+    r"/(careers?|career-opportunities|vacatures?|vacatures-overzicht|vacanc(?:y|ies)|jobs?|job-?openings|job-?offers|"
+    r"job-?listings|openings|open-?positions|positions|werken-?bij[^/]*|join-?us|join|hiring|work-with-us|"
+    r"working-at[^/]*|carri[eè]res?|karriere|stellenangebote)/?$", re.I)
+WERKENBIJ_HOST_RE = re.compile(r"^(www\.)?(werkenbij|werken-bij|careers?\.|jobs\.)", re.I)
+
+
 def vacancy_link(html: str, url: str) -> str | None:
     """Best 'see all vacancies' link on a homepage/landing page, on the same site or a jobs subdomain."""
     soup = BeautifulSoup(html, "lxml")
@@ -291,13 +299,15 @@ def discover(f: Fetcher, company: Company, _depth: int = 0) -> tuple[str, str]:
                 return adapter, url
             log.info("    %s: no jobs on %s either - staying on %s", company.name, nxt, company.url)
     if on_page == 0 and _depth == 1:
-        return "html", ""  # tell the caller this page wasn't better
+        if LISTING_PAGE_RE.search(urlsplit(final).path or "/") or WERKENBIJ_HOST_RE.search(urlsplit(final).netloc):
+            return "html", final  # a real vacancies page that just has no openings right now: watch it
+        return "html", ""  # tell the caller this page wasn't better (a single job, a news item, ...)
     return "html", company.url
 
 
 # -------------------------------------------------------------------- cache
 REDISCOVER_DAYS = 14
-DISCOVER_VERSION = 3  # bump when discovery learns new tricks, so cached results are refreshed
+DISCOVER_VERSION = 4  # bump when discovery learns new tricks, so cached results are refreshed
 
 
 def resolve(f: Fetcher, company: Company, cache: dict, force: bool = False) -> Company:

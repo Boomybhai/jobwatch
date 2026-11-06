@@ -446,8 +446,18 @@ NAV_WORDS = {
 }
 
 
+HOMERUN_JOB_RE = re.compile(r"^/[a-z0-9][a-z0-9-]*[a-z0-9](?:/[a-z]{2})?/?$", re.I)
+
+
+def _is_homerun(soup, base_url: str) -> bool:
+    """Homerun job boards (x.homerun.co or a custom jobs.company.com domain): jobs live at /<slug>[/en]."""
+    return urlsplit(base_url).netloc.endswith("homerun.co") or bool(
+        soup.find("meta", attrs={"name": "homerun:company_id"}) or soup.find("meta", attrs={"property": "homerun:company_id"}))
+
+
 def parse_html_jobs(html: str, base_url: str, company: str) -> list[Job]:
     soup = BeautifulSoup(html, "lxml")
+    homerun = _is_homerun(soup, base_url)
     base_tag = soup.find("base", href=True)
     if base_tag:  # <base href> changes how relative links resolve
         base_url = urljoin(base_url, base_tag["href"].strip())
@@ -466,8 +476,12 @@ def parse_html_jobs(html: str, base_url: str, company: str) -> list[Job]:
         absolute = urljoin(base_url, href).split("#")[0]
         if absolute.rstrip("/") == base_url.rstrip("/"):
             continue
-        if not JOBLINK_RE.search(urlsplit(absolute).path + "?" + urlsplit(absolute).query):
+        parts = urlsplit(absolute)
+        homerun_job = homerun and parts.netloc == urlsplit(base_url).netloc and HOMERUN_JOB_RE.match(parts.path)
+        if not homerun_job and not JOBLINK_RE.search(parts.path + "?" + parts.query):
             continue
+        if homerun_job:  # /operator/en and /operator are the same job
+            absolute = f"{parts.scheme}://{parts.netloc}" + re.sub(r"/[a-z]{2}/?$", "", parts.path.rstrip("/"))
         jobs.setdefault(absolute, Job(company=company, title=text, url=absolute, id=absolute))
     return list(jobs.values())
 

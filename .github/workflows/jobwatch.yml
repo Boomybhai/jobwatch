@@ -5,7 +5,7 @@ name: jobwatch
 
 on:
   schedule:
-    - cron: "1 */3 * * *"      # every 3 hours at :01 (UTC; GitHub may start a few minutes late)
+    - cron: "23 */3 * * *"     # every 3 hours at :23 UTC (off the busy top of the hour, when GitHub drops scheduled runs)
   workflow_dispatch:            # "Run workflow" button for a check right now
 
 concurrency:

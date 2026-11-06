@@ -1211,6 +1211,14 @@ def test_discover_stays_on_page_when_followed_link_has_no_jobs_either():
     assert discover(f, Company("Acme", "https://acme.com/careers")) == ("html", "https://acme.com/careers")
 
 
+def test_discover_keeps_empty_careers_page_found_from_homepage():
+    # a homepage linking to /careers that has no openings today: watch /careers, not the homepage
+    from jobwatch.discover import discover
+    pages = {"https://acme.com/": '<a href="/products">Products</a><a href="/careers">Careers</a>',
+             "https://acme.com/careers": "<p>No openings right now - send an open application.</p>"}
+    assert discover(SiteFetcher(pages), Company("Acme", "https://acme.com/")) == ("html", "https://acme.com/careers")
+
+
 def test_resolve_rediscovers_only_companies_without_jobs():
     from jobwatch.discover import resolve
     old = {"from": "https://acme.com/careers", "adapter": "html", "url": "https://acme.com/careers/x",
@@ -1295,3 +1303,13 @@ def test_ashby_board_is_read_from_posting_api():
     res = check_company(SiteFetcher({}, api), Company("SkyNRG", "https://jobs.ashbyhq.com/skynrg"))
     assert res.method == "ashby" and [j.title for j in res.jobs] == ["HSE Specialist | DSL-01"]
     assert res.jobs[0].location == "Delfzijl; Netherlands"
+
+
+def test_homerun_board_jobs_are_read():
+    from jobwatch.adapters import parse_html_jobs
+    html = ('<meta name="homerun:company_id" content="com_x">'
+            '<a href="/operator/en">Operator</a><a href="/operator">Operator</a>'
+            '<a href="https://jobs.myne.eco/commissioning-engineer/en">Commissioning Engineer</a>'
+            '<a href="/?lang=en">English</a><a href="https://myne.eco/">Our website</a>')
+    jobs = parse_html_jobs(html, "https://jobs.myne.eco/", "Myne")
+    assert sorted(j.url for j in jobs) == ["https://jobs.myne.eco/commissioning-engineer", "https://jobs.myne.eco/operator"]
