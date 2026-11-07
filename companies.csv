@@ -123,7 +123,7 @@ FUJIFILM Manufacturing Europe B.V.,Medium,Chemicals & process,https://www.fujifi
 Gate terminal,Medium,Chemicals & process,https://www.gateterminal.com/en/working-at-gate/,yes,auto,auto,Working at Gate,
 GEA Niro PT B.V.,Medium,Process equipment & instrumentation,https://www.gea.com/en/careers/,yes,auto,auto,Careers page (global — filter Netherlands),
 Genmab B.V.,Medium,"Pharma, biotech & medtech",https://careers.genmab.com/,yes,auto,auto,Careers site,
-GIDARA Energy Technology Solutions B.V.,Medium,"Water, waste & circular",https://gidara-energy.jobs.personio.com/,yes,html,auto,Personio job page,
+GIDARA Energy Technology Solutions B.V.,Medium,"Water, waste & circular",https://www.gidara-energy.com/careers/,yes,html,auto,Careers page (company site; Personio itself blocks automated reading),
 Givaudan Nederland B.V.,Medium,Food ingredients & agri-processing,https://www.givaudan.com/careers,yes,auto,auto,Careers page,
 Grolsche Bierbrouwerij Nederland B.V.,Medium,FMCG & food,https://careersasahiinternational.jobs.hr.cloud.sap/Werken_bij_Koninklijke_Gr/go/Alle-Vacatures-bij-Grolsch-&-De-Klok-Dranken/8724402/,yes,auto,auto,Careers page,
 H.J. Heinz Nederland B.V.,Medium,FMCG & food,https://heinz.wd1.myworkdayjobs.com/KraftHeinz_Careers,yes,workday,auto,Workday job feed (global — filter Netherlands),careers URL found by web search 2026-11-03
@@ -391,7 +391,7 @@ Phycom B.V.,Medium,Food ingredients & agri-processing,https://phycom.eu/jobs/,ye
 Olmix B.V.,Low,Food ingredients & agri-processing,https://www.olmix.com/,yes,auto,auto,Website,IND recognised sponsor; Kelp Blue competitor (algae-based plant & animal care)
 Koppert B.V.,Medium,Food ingredients & agri-processing,https://werkenbijkoppert.nl/nl/vacatures,yes,auto,auto,Careers page (werkenbijkoppert.nl),"IND recognised sponsor; Kelp Blue competitor (biologicals & biostimulants, Berkel en Rodenrijs)"
 Van Iperen International B.V.,Low,Food ingredients & agri-processing,https://www.vaniperen.com/job-offers/vacancies-van-iperen-international/,yes,auto,auto,Vacancies page,IND recognised sponsor; Kelp Blue competitor (fertilisers & biostimulants)
-Perpetual Next B.V.,High,"Energy, fuels & gases",https://perpetualnext.com/vacatures/,yes,auto,auto,Careers page (NL),"IND recognised sponsor; organic waste to biomethanol/biomethane (Amsterdam, plant in Delfzijl)"
+Perpetual Next B.V.,High,"Energy, fuels & gases",https://perpetualnext.com/vacatures/,yes,html,auto,Careers page (NL),"IND recognised sponsor; organic waste to biomethanol/biomethane (Amsterdam, plant in Delfzijl)"
 BTG BioLiquids B.V.,High,"Energy, fuels & gases",https://www.btg-bioliquids.com/about-us/careers/,yes,auto,auto,Careers page,"IND recognised sponsor; Perpetual Next competitor (biomass fast pyrolysis oil, Enschede)"
 ATTERO B.V.,Medium,"Water, waste & circular",https://www.attero.nl/nl/werken-bij/vacatures/,yes,auto,auto,Careers page (NL),IND recognised sponsor; Perpetual Next competitor (green gas from organic waste)
 AEB Exploitatie B.V.,Medium,"Water, waste & circular",https://werkenbij.aebamsterdam.nl/vacatures/,yes,auto,auto,Careers page (NL),"IND recognised sponsor; Perpetual Next competitor (waste-to-energy & bio-energy plant, Amsterdam)"
