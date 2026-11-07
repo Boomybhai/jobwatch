@@ -21,6 +21,9 @@ class RobotsDisallowed(Exception):
 BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 RETRY_STATUSES = (403, 406)
+# Workday & co. sometimes answer a burst of requests with a 5xx or an HTML error page
+# (JSONDecodeError); one calm retry a few seconds later usually gets the real answer.
+TRANSIENT_RETRY_SECONDS = 5.0
 
 
 class Fetcher:
@@ -88,6 +91,11 @@ class Fetcher:
             self._wait()
             resp = self.session.post(url, json=payload, timeout=self.settings.timeout_seconds,
                                      headers={**headers, "User-Agent": BROWSER_UA})
+        if _transient(resp):
+            time.sleep(TRANSIENT_RETRY_SECONDS)
+            self._wait()
+            resp = self.session.post(url, json=payload, timeout=self.settings.timeout_seconds,
+                                     headers=headers)
         resp.raise_for_status()
         return resp.json()
 
@@ -100,6 +108,11 @@ class Fetcher:
             self._wait()
             resp = self.session.get(url, timeout=self.settings.timeout_seconds,
                                     headers={"Accept": "application/json", "User-Agent": BROWSER_UA}, **kw)
+        if _transient(resp):
+            time.sleep(TRANSIENT_RETRY_SECONDS)
+            self._wait()
+            resp = self.session.get(url, timeout=self.settings.timeout_seconds,
+                                    headers={"Accept": "application/json"}, **kw)
         resp.raise_for_status()
         return resp.json()
 
@@ -148,6 +161,19 @@ class Fetcher:
         if self._pw is not None:
             self._pw.stop()
             self._pw = None
+
+
+def _transient(resp: requests.Response) -> bool:
+    """A server error, or a 200 whose body is not JSON (an HTML error/maintenance page)."""
+    if resp.status_code >= 500:
+        return True
+    if resp.status_code != 200:
+        return False
+    try:
+        resp.json()
+    except ValueError:
+        return True
+    return False
 
 
 def _fix_encoding(resp: requests.Response) -> None:

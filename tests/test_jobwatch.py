@@ -1313,3 +1313,37 @@ def test_homerun_board_jobs_are_read():
             '<a href="/?lang=en">English</a><a href="https://myne.eco/">Our website</a>')
     jobs = parse_html_jobs(html, "https://jobs.myne.eco/", "Myne")
     assert sorted(j.url for j in jobs) == ["https://jobs.myne.eco/commissioning-engineer", "https://jobs.myne.eco/operator"]
+
+
+# ------------------------------------------------- transient API errors (Nov 2026)
+def _resp(status, body):
+    import requests as rq
+    r = rq.Response()
+    r.status_code = status
+    r._content = body.encode()
+    return r
+
+
+@pytest.mark.parametrize("first", [(500, "oops"), (200, "<html>maintenance</html>")])
+def test_json_api_retries_once_after_server_error_or_html(monkeypatch, first):
+    from jobwatch import fetch as fetch_mod
+    monkeypatch.setattr(fetch_mod, "TRANSIENT_RETRY_SECONDS", 0)
+    f = fetch_mod.Fetcher(Settings(request_delay_seconds=0))
+    answers = [_resp(*first), _resp(200, '{"total": 1}')]
+    monkeypatch.setattr(f.session, "post", lambda *a, **k: answers.pop(0))
+    assert f.post_json("https://x.wd3.myworkdayjobs.com/wday/cxs/x/s/jobs", {}) == {"total": 1}
+    answers[:] = [_resp(*first), _resp(200, '{"ok": true}')]
+    monkeypatch.setattr(f.session, "get", lambda *a, **k: answers.pop(0))
+    assert f.get_json("https://api.example.com/jobs") == {"ok": True}
+
+
+def test_json_api_gives_up_after_one_retry(monkeypatch):
+    import requests as rq
+    from jobwatch import fetch as fetch_mod
+    monkeypatch.setattr(fetch_mod, "TRANSIENT_RETRY_SECONDS", 0)
+    f = fetch_mod.Fetcher(Settings(request_delay_seconds=0))
+    calls = []
+    monkeypatch.setattr(f.session, "post", lambda *a, **k: calls.append(1) or _resp(500, "down"))
+    with pytest.raises(rq.HTTPError):
+        f.post_json("https://x.wd3.myworkdayjobs.com/wday/cxs/x/s/jobs", {})
+    assert len(calls) == 2
