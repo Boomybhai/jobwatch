@@ -71,7 +71,15 @@ def fetch_workday(f: Fetcher, company: Company, max_jobs: int) -> list[Job]:
     offset = 0
     total = None
     while offset < max_jobs:
-        data = f.post_json(api, {"appliedFacets": {}, "limit": 20, "offset": offset, "searchText": ""})
+        try:
+            data = f.post_json(api, {"appliedFacets": {}, "limit": 20, "offset": offset, "searchText": ""})
+        except Exception as exc:
+            if not jobs:
+                raise
+            # a later page failed (NXP answered 422 mid-way): keep the newest jobs already read
+            log.info("    %s: Workday page at offset %d failed (%s) - keeping %d job(s)",
+                     company.name, offset, exc, len(jobs))
+            break
         postings = data.get("jobPostings") or []
         if total is None:  # Workday only sends the total on the first page (later pages say 0)
             total = data.get("total") or 0
@@ -302,19 +310,20 @@ def fetch_successfactors(f: Fetcher, company: Company, max_jobs: int) -> list[Jo
     base = f"{parts.scheme or 'https'}://{parts.netloc}"
     # ?employer=DFE keeps only that employer's jobs on a site shared by a group of companies
     employer = ((parse_qs(parts.query).get("employer") or [""])[0]).lower()
-    soup, last_exc = None, None
+    soup, first_exc = None, None
     for path in ("/sitemap.xml", "/sitemal.xml"):
         try:
             cand = BeautifulSoup(f.get(base + path).text, "xml")
         except Exception as exc:
-            last_exc = exc
+            # report the /sitemap.xml error: /sitemal.xml is only a fallback and 404s on most sites
+            first_exc = first_exc or exc
             continue
         if cand.find("item") or any("/job/" in (l.get_text() or "") for l in cand.find_all("loc")[:2000]):
             soup = cand
             break
     if soup is None:
-        if last_exc:
-            raise last_exc
+        if first_exc:
+            raise first_exc
         raise ValueError(f"no SuccessFactors job feed at {base}/sitemap.xml or /sitemal.xml")
     jobs: list[Job] = []
     if not soup.find("item"):  # plain sitemap: job URLs only

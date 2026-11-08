@@ -1347,3 +1347,34 @@ def test_json_api_gives_up_after_one_retry(monkeypatch):
     with pytest.raises(rq.HTTPError):
         f.post_json("https://x.wd3.myworkdayjobs.com/wday/cxs/x/s/jobs", {})
     assert len(calls) == 2
+
+
+def test_plain_get_retries_once_after_server_error(monkeypatch):
+    from jobwatch import fetch as fetch_mod
+    monkeypatch.setattr(fetch_mod, "TRANSIENT_RETRY_SECONDS", 0)
+    f = fetch_mod.Fetcher(Settings(request_delay_seconds=0))
+    monkeypatch.setattr(f, "_check_robots", lambda url: None)
+    answers = [_resp(503, "busy"), _resp(200, "<rss></rss>")]
+    monkeypatch.setattr(f.session, "get", lambda *a, **k: answers.pop(0))
+    assert f.get("https://jobs.example.com/sitemap.xml").text == "<rss></rss>"
+
+
+def test_successfactors_reports_the_sitemap_error_not_the_sitemal_404():
+    class F(FakeFetcher):
+        def get(self, url, **kw):
+            self.calls.append(url)
+            raise RuntimeError(("503 for " if url.endswith("/sitemap.xml") else "404 for ") + url)
+    res = check_company(F(), Company("SBM", "https://careers.sbmoffshore.com/", adapter="successfactors"))
+    assert res.error and "503" in res.error and "sitemap.xml" in res.error
+
+
+def test_workday_keeps_earlier_pages_when_a_later_page_fails():
+    class F(FakeFetcher):
+        def post_json(self, url, payload):
+            if payload["offset"] > 0:
+                raise RuntimeError("422 Client Error: Unprocessable Entity")
+            return {"total": 40, "jobPostings": [
+                {"title": f"Engineer {i}", "externalPath": f"/job/Nijmegen/E_{i}", "locationsText": "Nijmegen"}
+                for i in range(20)]}
+    res = check_company(F(), Company("NXP", "https://nxp.wd3.myworkdayjobs.com/careers", adapter="workday"), 300)
+    assert not res.error and len(res.jobs) == 20

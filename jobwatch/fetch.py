@@ -78,6 +78,10 @@ class Fetcher:
             headers = {**kw.pop("headers", {}), "User-Agent": BROWSER_UA}
             self._wait()
             resp = self.session.get(url, timeout=self.settings.timeout_seconds, headers=headers, **kw)
+        if resp.status_code >= 500:  # brief server hiccup -> one more try
+            time.sleep(TRANSIENT_RETRY_SECONDS)
+            self._wait()
+            resp = self.session.get(url, timeout=self.settings.timeout_seconds, **kw)
         resp.raise_for_status()
         _fix_encoding(resp)
         return resp
