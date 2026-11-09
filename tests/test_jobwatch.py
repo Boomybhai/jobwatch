@@ -1378,3 +1378,16 @@ def test_workday_keeps_earlier_pages_when_a_later_page_fails():
                 for i in range(20)]}
     res = check_company(F(), Company("NXP", "https://nxp.wd3.myworkdayjobs.com/careers", adapter="workday"), 300)
     assert not res.error and len(res.jobs) == 20
+
+
+def test_json_api_4xx_error_includes_what_the_server_said(monkeypatch):
+    import requests as rq
+    from jobwatch import fetch as fetch_mod
+    f = fetch_mod.Fetcher(Settings(request_delay_seconds=0))
+    r = _resp(422, '{"errorCode": "S22", "message": "Invalid offset"}')
+    r.url = "https://nxp.wd3.myworkdayjobs.com/wday/cxs/nxp/careers/jobs"
+    monkeypatch.setattr(f.session, "post", lambda *a, **k: r)
+    with pytest.raises(rq.HTTPError) as exc:
+        f.post_json(r.url, {})
+    assert "422" in str(exc.value) and "Invalid offset" in str(exc.value)
+    assert exc.value.response.status_code == 422

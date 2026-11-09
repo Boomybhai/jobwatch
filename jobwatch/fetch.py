@@ -100,7 +100,7 @@ class Fetcher:
             self._wait()
             resp = self.session.post(url, json=payload, timeout=self.settings.timeout_seconds,
                                      headers=headers)
-        resp.raise_for_status()
+        _raise_with_body(resp)
         return resp.json()
 
     def get_json(self, url: str, **kw) -> dict:
@@ -117,7 +117,7 @@ class Fetcher:
             self._wait()
             resp = self.session.get(url, timeout=self.settings.timeout_seconds,
                                     headers={"Accept": "application/json"}, **kw)
-        resp.raise_for_status()
+        _raise_with_body(resp)
         return resp.json()
 
     def render(self, url: str) -> str:
@@ -165,6 +165,18 @@ class Fetcher:
         if self._pw is not None:
             self._pw.stop()
             self._pw = None
+
+
+def _raise_with_body(resp: requests.Response) -> None:
+    """raise_for_status, but a 4xx from a JSON API also says what the server objected to
+    (NXP's Workday answers 422 and the bare status line doesn't tell why)."""
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as exc:
+        body = " ".join((resp.text or "").split())[:200] if 400 <= resp.status_code < 500 else ""
+        if not body:
+            raise
+        raise requests.HTTPError(f"{exc} - server said: {body}", response=resp) from exc
 
 
 def _transient(resp: requests.Response) -> bool:
