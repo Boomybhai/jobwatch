@@ -13,6 +13,7 @@ from jobwatch.adapters import (
     detect_adapter,
     parse_html_jobs,
     workday_endpoint,
+    workday_facets,
 )
 from jobwatch.cli import main
 from jobwatch.config import Settings, load_companies, load_settings
@@ -173,6 +174,47 @@ def test_workday_paging_and_locations():
     assert len(res.jobs) == 21
     assert res.jobs[-1].location == ""            # "3 Locations" blanked
     assert res.jobs[0].url == "https://iff.wd5.myworkdayjobs.com/IFF_Careers/job/NL/E0"
+
+
+def test_workday_filters_from_link():
+    assert workday_facets("https://nxp.wd3.myworkdayjobs.com/careers") == ({}, "")
+    assert workday_facets("https://nxp.wd3.myworkdayjobs.com/careers?Location_Country=abc&Location_Country=def&q=process+engineer") == (
+        {"Location_Country": ["abc", "def"]}, "process engineer")
+    sent = []
+
+    class F(FakeFetcher):
+        def post_json(self, url, payload):
+            sent.append((url, payload))
+            return {"total": 1, "jobPostings": [{"title": "Process Engineer", "externalPath": "/job/Nijmegen/P_R1"}]}
+
+    res = check_company(F(), Company("NXP", "https://nxp.wd3.myworkdayjobs.com/careers?Location_Country=abc"))
+    assert not res.error and len(res.jobs) == 1
+    assert sent[0][0] == "https://nxp.wd3.myworkdayjobs.com/wday/cxs/nxp/careers/jobs"
+    assert sent[0][1]["appliedFacets"] == {"Location_Country": ["abc"]} and sent[0][1]["searchText"] == ""
+    assert res.jobs[0].url == "https://nxp.wd3.myworkdayjobs.com/careers/job/Nijmegen/P_R1"
+
+
+def test_sitemap_keeps_one_link_per_translated_job():
+    from jobwatch.adapters import dedupe_translations
+    urls = [
+        "https://www.themembercompany.com/nl/vacatures/supply-chain-engineer-cTEAV",
+        "https://www.themembercompany.com/careers/supply-chain-engineer-cTEAV",
+        "https://www.themembercompany.com/fr/carrieres/ingenieur-supply-chain-cTEAV",
+        "https://www.processionals.nl/vacatures/energie-en-afval/qa-medewerker-a0wqd00000fqaazyah",
+        "https://www.processionals.nl/vacatures/qa-medewerker-a0wqd00000fqaazyah",
+        "https://x.nl/jobs/Process-Engineer", "https://x.nl/jobs/Chemical-Engineer",  # words, not codes
+        "https://x.nl/jobs/operator-2026", "https://x.nl/jobs/engineer-2026",
+        "https://y.nl/jobs/engineer-r12345", "https://z.nl/jobs/engineer-r12345",  # other site: own job
+    ]
+    assert dedupe_translations(urls) == [
+        "https://www.themembercompany.com/careers/supply-chain-engineer-cTEAV",
+        "https://www.processionals.nl/vacatures/qa-medewerker-a0wqd00000fqaazyah",
+        "https://x.nl/jobs/Process-Engineer", "https://x.nl/jobs/Chemical-Engineer",
+        "https://x.nl/jobs/operator-2026", "https://x.nl/jobs/engineer-2026",
+        "https://y.nl/jobs/engineer-r12345", "https://z.nl/jobs/engineer-r12345",
+    ]
+    # the same link wins whatever order the sitemap lists them in
+    assert dedupe_translations(list(reversed(urls[:3]))) == [urls[1]]
 
 
 def test_greenhouse_recruitee_smartrecruiters():

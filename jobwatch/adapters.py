@@ -65,14 +65,26 @@ def workday_endpoint(url: str) -> tuple[str, str, str]:
     return api, f"https://{host}/{site}", site
 
 
+def workday_facets(url: str) -> tuple[dict, str]:
+    """Filters in a Workday careers link (?Location_Country=<id>&q=engineer) -> (appliedFacets, searchText).
+
+    Workday links carry the site's own filters as query parameters, so a URL copied
+    from the careers page with the Netherlands filter on reads only those jobs.
+    """
+    qs = parse_qs(urlsplit(url).query)
+    search = " ".join(qs.pop("q", []))
+    return {k: v for k, v in qs.items() if v}, search
+
+
 def fetch_workday(f: Fetcher, company: Company, max_jobs: int) -> list[Job]:
     api, public, _ = workday_endpoint(company.url)
+    facets, search = workday_facets(company.url)
     jobs: list[Job] = []
     offset = 0
     total = None
     while offset < max_jobs:
         try:
-            data = f.post_json(api, {"appliedFacets": {}, "limit": 20, "offset": offset, "searchText": ""})
+            data = f.post_json(api, {"appliedFacets": facets, "limit": 20, "offset": offset, "searchText": search})
         except Exception as exc:
             if not jobs:
                 raise
@@ -435,9 +447,48 @@ def title_from_url(url: str) -> str:
     return best[:1].upper() + best[1:]
 
 
+_SLUG_ID_RE = re.compile(r"[-_]([A-Za-z0-9]{5,})/?$")
+_LANG_SEG_RE = re.compile(r"^([a-z]{2})(?:[-_][a-zA-Z]{2})?$")
+
+
+def _slug_id(url: str) -> str:
+    """The job's own code at the end of its link ('…/supply-chain-engineer-cTEAV' -> 'cTEAV'), or ''."""
+    m = _SLUG_ID_RE.search(urlsplit(url).path)
+    if not m:
+        return ""
+    tok = m.group(1)
+    if re.search(r"\d", tok) or re.search(r"[a-z][A-Z]", tok):
+        return tok
+    return ""
+
+
+def dedupe_translations(urls: list[str]) -> list[str]:
+    """One link per job when a sitemap lists the same vacancy in several languages or sections.
+
+    '/careers/x-cTEAV', '/nl/vacatures/x-cTEAV' and '/fr/carrieres/y-cTEAV' are one job. The
+    link kept is always the same one (no foreign-language prefix, then shortest), so it
+    doesn't flip between runs and look new.
+    """
+    def rank(u: str) -> tuple:
+        segs = [s for s in urlsplit(u).path.split("/") if s]
+        m = _LANG_SEG_RE.match(segs[0]) if len(segs) > 1 else None
+        foreign = bool(m and m.group(1) not in ("en", "nl"))
+        return (foreign, len(u), u)
+
+    best: dict[tuple, str] = {}
+    for u in urls:
+        tok = _slug_id(u)
+        if tok:
+            key = (urlsplit(u).netloc.lower(), tok)
+            if key not in best or rank(u) < rank(best[key]):
+                best[key] = u
+    keep = set(best.values())
+    return [u for u in urls if not _slug_id(u) or u in keep]
+
+
 def fetch_sitemap(f: Fetcher, company: Company) -> list[Job]:
     from .discover import collect_sitemap_jobs  # avoid import cycle
-    urls = collect_sitemap_jobs(f, company.url, strict=True)[:5000]
+    urls = dedupe_translations(collect_sitemap_jobs(f, company.url, strict=True))[:5000]
     return [Job(company=company.name, title=title_from_url(u), url=u, id=u) for u in urls]
 
 
