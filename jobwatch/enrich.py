@@ -69,6 +69,60 @@ def _location(posting: dict) -> str:
     return "; ".join(dict.fromkeys(x for x in out if x))
 
 
+# Job-detail markup that names the place: "dn-jobdetails__countries", "job-location", "jobdetail-city"...
+_PLACE_CLASS_RE = re.compile(r"job.*(countr(?:y|ies)|location|city)|(countr(?:y|ies)|location|city).*job", re.I)
+
+
+def _drop_pickers(soup) -> None:
+    """Remove country/language pickers: their option lists name every country on earth."""
+    for t in soup.find_all(["select", "option", "datalist"]):
+        t.decompose()
+    for t in soup.find_all(attrs={"role": ["listbox", "option", "menu"]}):
+        t.decompose()
+
+
+def _names_country(text: str) -> bool:
+    from .filters import FOREIGN_COUNTRIES, WANTED_COUNTRIES  # local import avoids a cycle
+    low = text.lower()
+    names = set(WANTED_COUNTRIES) | set(FOREIGN_COUNTRIES) | {c.lower() for c in COUNTRIES.values()}
+    return any(re.search(r"(?<![a-zà-ÿ])" + re.escape(n) + r"(?![a-zà-ÿ])", low) for n in names)
+
+
+def _page_location(soup) -> str:
+    """'Boksburg, South Africa' from job-detail markup when the page has no JobPosting block."""
+    country = city = ""
+    for prop in ("addressCountry", "addressLocality"):
+        tag = soup.find(attrs={"itemprop": prop})
+        if tag:
+            val = (tag.get("content") or tag.get_text(" ", strip=True)).strip()
+            if prop == "addressCountry":
+                country = COUNTRIES.get(val.upper(), val)
+            else:
+                city = val
+    if not country:
+        tag = soup.find(lambda t: t.name not in ("select", "option", "input") and t.get("country"))
+        if tag:
+            country, city = tag.get("country", "").strip(), city or (tag.get("city") or "").strip()
+    if not country:
+        for tag in soup.find_all(class_=_PLACE_CLASS_RE):
+            text = " ".join(tag.get_text(" ", strip=True).split())
+            if not text or len(text) > 60:
+                continue
+            kind = _PLACE_CLASS_RE.search(" ".join(tag.get("class") or []))
+            word = (kind.group(1) or kind.group(2) or "").lower()
+            if word.startswith("countr"):
+                country = country or text
+            elif word == "city":
+                city = city or text
+            elif word == "location" and not country:
+                country = text
+            if country and city:
+                break
+    if len(country) > 60 or not _names_country(country):
+        return ""  # not a place we recognise (a "Location" label, a filter button...) -> don't guess
+    return ", ".join(dict.fromkeys(x for x in (city, country) if x))
+
+
 def parse_job_page(html: str) -> dict:
     """{'title','location','description'} from a job page (empty strings when unknown)."""
     soup = BeautifulSoup(html, "lxml")
@@ -87,9 +141,16 @@ def parse_job_page(html: str) -> dict:
         if found["title"]:
             break
     if not found["title"]:
-        h1 = soup.find("h1")
+        h1s = [h.get_text(" ", strip=True) for h in soup.find_all("h1")]
         og = soup.find("meta", property="og:title")
-        found["title"] = (h1.get_text(" ", strip=True) if h1 else "") or (og.get("content", "") if og else "")
+        og_title = (og.get("content", "") if og else "").strip()
+        # several <h1>s (Danone: the job family, then the job): take the one the page's og:title names
+        same = [h for h in h1s if og_title and h.lower() == og_title.lower()]
+        found["title"] = (same[0] if same else (h1s[0] if h1s else "")) or og_title
+    if not found["location"] or not found["description"]:
+        _drop_pickers(soup)
+    if not found["location"]:
+        found["location"] = _page_location(soup)
     if not found["description"]:
         for t in soup(["script", "style", "noscript", "nav", "footer", "header"]):
             t.decompose()

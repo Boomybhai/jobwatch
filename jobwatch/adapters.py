@@ -507,7 +507,8 @@ def title_from_url(url: str) -> str:
     return best[:1].upper() + best[1:]
 
 
-_SLUG_ID_RE = re.compile(r"[-_]([A-Za-z0-9]{5,})/?$")
+# the code may be followed by a language tag and .html: "…-29198-en-us.html" (Danone)
+_SLUG_ID_RE = re.compile(r"[-_]([A-Za-z0-9]{5,})(?:[-_][a-z]{2}[-_][a-z]{2})?(?:\.html?)?/?$")
 _LANG_SEG_RE = re.compile(r"^([a-z]{2})(?:[-_][a-zA-Z]{2})?$")
 
 

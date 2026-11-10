@@ -33,7 +33,7 @@ FOREIGN_COUNTRIES = [
     "united states", "usa", "u.s.a.", "united kingdom", "germany", "deutschland", "duitsland", "france",
     "frankrijk", "spain", "españa", "italy", "italia", "switzerland", "schweiz", "austria", "sweden",
     "denmark", "norway", "finland", "poland", "czech republic", "czechia", "hungary", "romania",
-    "ireland", "portugal", "greece", "canada", "mexico", "brazil", "argentina", "chile", "colombia",
+    "ireland", "portugal", "greece", "canada", "mexico", "méxico", "brazil", "brasil", "brésil", "brasilien", "argentina", "chile", "colombia",
     "china", "japan", "singapore", "malaysia", "indonesia", "thailand", "vietnam", "philippines",
     "australia", "new zealand", "saudi arabia", "united arab emirates", "qatar", "south africa",
     "egypt", "israel", "turkey", "türkiye", "south korea", "taiwan", "lithuania", "latvia", "estonia",

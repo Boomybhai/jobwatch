@@ -234,6 +234,39 @@ def test_workday_reads_only_wanted_countries():
     assert sent == [{"Location_Country": ["x"]}]
 
 
+DANONE_LIKE = """<html><head><meta property="og:title" content="Project Engineer"></head><body>
+<select name="countryISO2C"><option>Select a location</option><option>Brazil</option><option>Netherlands</option></select>
+<ul role="listbox"><li role="option">India</li><li role="option">Netherlands</li></ul>
+<h1>Manufacturing</h1><h1>Project Engineer</h1>
+<ul><li><span class="dn-jobdetails__countries"><img src="x.svg"> {country} </span></li>
+<li><span class="dn-jobdetails__procedure-icon--city"> {city} </span></li></ul>
+<p>{body}</p><p>No Brasil, recentemente unificamos nossas unidades.</p></body></html>"""
+
+
+def test_job_page_location_from_detail_markup_not_country_picker():
+    from jobwatch.enrich import parse_job_page
+    from jobwatch.filters import location_verdict
+    body = "We are looking for a Project Engineer to lead improvement projects in the factory. " * 8
+    s = Settings(location_keywords=["netherlands", "haps"], foreign_location_keywords=["brazil", "south africa"])
+    abroad = parse_job_page(DANONE_LIKE.format(country="South Africa", city="Boksburg", body=body))
+    assert abroad["title"] == "Project Engineer"            # the h1 that og:title names, not the job family
+    assert abroad["location"] == "Boksburg, South Africa"
+    assert "Netherlands" not in abroad["description"]       # the country picker is not job text
+    url = "https://careers.danone.com/br/pt/jobs/project-engineer-29198-en-us.html"
+    job = Job("Danone", abroad["title"], url, location=abroad["location"], description=abroad["description"])
+    assert location_verdict(job, s, use_page=True) == "drop"
+    haps = parse_job_page(DANONE_LIKE.format(country="Netherlands", city="HAPS", body=body))
+    assert haps["location"] == "HAPS, Netherlands"
+    assert location_verdict(Job("Danone", "Project Engineer", url, location=haps["location"]), s) == "keep"
+    # a page whose "location" element holds no place keeps location unknown
+    plain = parse_job_page('<h1>Engineer</h1><button class="job-location-filter">Location</button>')
+    assert plain["location"] == ""
+    # Danone lists each job once per country site: keep one link
+    from jobwatch.adapters import dedupe_translations
+    assert dedupe_translations([url, "https://careers.danone.com/en-global/jobs/project-engineer-29198-en-us.html"]) == [
+        "https://careers.danone.com/en-global/jobs/project-engineer-29198-en-us.html"]
+
+
 def test_sitemap_keeps_one_link_per_translated_job():
     from jobwatch.adapters import dedupe_translations
     urls = [
