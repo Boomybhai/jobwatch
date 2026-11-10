@@ -1048,6 +1048,12 @@ user_agent: "jobwatch/1.0 (personal job-alert script; checks a few times a day)"
 
 # Max postings to read from each Workday-type feed per run.
 max_jobs_per_api: 300
+# Workday sites: use the site's own country filter, so only jobs in these countries are
+# read (big employers list thousands of jobs worldwide; without this, Dutch ones can fall
+# past max_jobs_per_api). A site without a country filter is read in full as before.
+workday_countries:
+  - Netherlands
+  - Belgium
 # Skip companies below this priority (Low | Medium | High).
 min_priority: Low
 

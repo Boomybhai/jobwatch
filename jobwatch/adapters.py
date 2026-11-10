@@ -76,15 +76,75 @@ def workday_facets(url: str) -> tuple[dict, str]:
     return {k: v for k, v in qs.items() if v}, search
 
 
+COUNTRY_ALIASES = {
+    "netherlands": {"netherlands", "the netherlands", "nederland", "pays-bas", "niederlande", "nl", "nld"},
+    "belgium": {"belgium", "belgië", "belgie", "belgique", "belgien", "be", "bel"},
+}
+
+
+def workday_country_facet(data: dict, countries) -> dict:
+    """The site's own country filter for these countries, from a Workday search answer's facet list.
+
+    Tenants name the facet differently (Location_Country, locationCountry, ...) and sometimes
+    nest it in a group, so look for values called 'Netherlands' / 'Belgium' and prefer a facet
+    whose name says country. Returns {} when the site has no such filter.
+    """
+    wanted = set()
+    for c in countries or ():
+        c = str(c).strip().lower()
+        wanted |= COUNTRY_ALIASES.get(c, {c})
+    found: list[tuple[str, list[str]]] = []
+
+    def walk(nodes):
+        for node in nodes or []:
+            if not isinstance(node, dict):
+                continue
+            param, values = node.get("facetParameter") or "", node.get("values") or []
+            ids = [v.get("id") for v in values if isinstance(v, dict) and v.get("id")
+                   and str(v.get("descriptor") or "").strip().lower() in wanted]
+            if param and ids:
+                found.append((param, ids))
+            walk([v for v in values if isinstance(v, dict) and v.get("values")])
+
+    if wanted:
+        walk(data.get("facets"))
+    if not found:
+        return {}
+    found.sort(key=lambda pi: "country" not in pi[0].lower())
+    param, ids = found[0]
+    return {param: list(dict.fromkeys(ids))}
+
+
 def fetch_workday(f: Fetcher, company: Company, max_jobs: int) -> list[Job]:
     api, public, _ = workday_endpoint(company.url)
     facets, search = workday_facets(company.url)
+
+    def page(offset: int, applied: dict) -> dict:
+        return f.post_json(api, {"appliedFacets": applied, "limit": 20, "offset": offset, "searchText": search})
+
+    first = None
+    countries = getattr(getattr(f, "settings", None), "workday_countries", None) or []
+    if not facets and countries:
+        # read only the wanted countries' jobs, so big employers' Dutch jobs aren't cut off at max_jobs
+        first = page(0, {})
+        cf = workday_country_facet(first, countries)
+        if cf:
+            try:
+                filtered = page(0, cf)
+                facets, first = cf, filtered
+                log.info("    %s: Workday country filter %s -> %s job(s)",
+                         company.name, ", ".join(countries), filtered.get("total"))
+            except Exception as exc:
+                log.info("    %s: Workday country filter failed (%s) - reading all jobs", company.name, exc)
     jobs: list[Job] = []
     offset = 0
     total = None
     while offset < max_jobs:
         try:
-            data = f.post_json(api, {"appliedFacets": facets, "limit": 20, "offset": offset, "searchText": search})
+            if offset == 0 and first is not None:
+                data = first
+            else:
+                data = page(offset, facets)
         except Exception as exc:
             if not jobs:
                 raise

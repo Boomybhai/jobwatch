@@ -194,6 +194,46 @@ def test_workday_filters_from_link():
     assert res.jobs[0].url == "https://nxp.wd3.myworkdayjobs.com/careers/job/Nijmegen/P_R1"
 
 
+def test_workday_reads_only_wanted_countries():
+    from jobwatch.adapters import workday_country_facet
+    answer = {"total": 900, "jobPostings": [{"title": "Engineer US", "externalPath": "/job/US/1"}], "facets": [
+        {"facetParameter": "jobFamilyGroup", "values": [{"descriptor": "Engineering", "id": "fam"}]},
+        {"facetParameter": "locationMainGroup", "values": [
+            {"facetParameter": "locationCountry", "descriptor": "Country", "values": [
+                {"descriptor": "Netherlands", "id": "nl-id", "count": 40},
+                {"descriptor": "Belgium", "id": "be-id", "count": 5},
+                {"descriptor": "United States of America", "id": "us-id", "count": 800}]},
+            {"facetParameter": "locations", "values": [{"descriptor": "Netherlands", "id": "city-ish"}]}]}]}
+    assert workday_country_facet(answer, ["Netherlands", "Belgium"]) == {"locationCountry": ["nl-id", "be-id"]}
+    assert workday_country_facet(answer, []) == {}
+    assert workday_country_facet({"facets": []}, ["Netherlands"]) == {}
+
+    sent = []
+
+    class F(FakeFetcher):
+        settings = Settings(workday_countries=["Netherlands", "Belgium"])
+
+        def post_json(self, url, payload):
+            sent.append(payload["appliedFacets"])
+            if not payload["appliedFacets"]:
+                return answer
+            return {"total": 1, "jobPostings": [{"title": "Process Engineer", "externalPath": "/job/Delft/P_1"}]}
+
+    res = check_company(F(), Company("Acme", "https://acme.wd3.myworkdayjobs.com/Ext"), 300)
+    assert [j.title for j in res.jobs] == ["Process Engineer"]
+    assert sent == [{}, {"locationCountry": ["nl-id", "be-id"]}]
+
+    # no country filter on the site -> everything, as before; a filter in the link wins
+    sent.clear()
+    plain = {"total": 1, "jobPostings": [{"title": "Chemist", "externalPath": "/job/NL/C_1"}]}
+    F.post_json = lambda self, url, payload: sent.append(payload["appliedFacets"]) or plain
+    assert [j.title for j in check_company(F(), Company("Acme", "https://acme.wd3.myworkdayjobs.com/Ext")).jobs] == ["Chemist"]
+    assert sent == [{}]
+    sent.clear()
+    check_company(F(), Company("Acme", "https://acme.wd3.myworkdayjobs.com/Ext?Location_Country=x"))
+    assert sent == [{"Location_Country": ["x"]}]
+
+
 def test_sitemap_keeps_one_link_per_translated_job():
     from jobwatch.adapters import dedupe_translations
     urls = [

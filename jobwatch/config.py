@@ -35,6 +35,7 @@ class Settings:
     min_priority: str = "Low"           # Low | Medium | High
     notify_errors_every_runs: int = 0   # 0 = never include error list in emails
     label: str = ""                     # e.g. "Belgium": shown in notification titles
+    workday_countries: list[str] = field(default_factory=list)  # Workday sites: read only these countries
     repeat_hours: int = 24              # repeat jobs already shown this many hours back (0 = off)
 
 
