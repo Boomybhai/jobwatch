@@ -1506,3 +1506,24 @@ def test_json_api_4xx_error_includes_what_the_server_said(monkeypatch):
         f.post_json(r.url, {})
     assert "422" in str(exc.value) and "Invalid offset" in str(exc.value)
     assert exc.value.response.status_code == 422
+
+
+def test_thank_you_pages_in_sitemaps_are_not_jobs():
+    from jobwatch.discover import is_job_url
+    base = "https://www.brunel.net/nl-nl/carriere/"
+    assert not is_job_url(base + "it-en-telecom/it-traineeships/dutch-ai-traineeship/thank-you")
+    assert not is_job_url(base + "it-en-telecom/it-traineeships/bedank-pagina-it-traineeship")
+    assert not is_job_url("https://example.nl/vacatures/bedankt-voor-je-sollicitatie")
+    assert is_job_url(base + "engineering/traineeships/instrumentation-process-automation-shell")
+    assert is_job_url("https://www.brunel.net/en-nl/jobs/middelbaar-veiligheidskundige-tr-308399")
+
+
+def test_sitemap_candidates_try_own_host_before_foreign_robots_sitemap():
+    from jobwatch.discover import sitemap_candidates
+    robots = "User-agent: *\r\nAllow: /\r\n\r\nSitemap: https://werk.ah.nl/sitemap.xml"
+    cands = sitemap_candidates(FakeFetcher(html=robots), "https://www.werkenbijsmurfitwestrock.nl/")
+    assert cands[0] == "https://www.werkenbijsmurfitwestrock.nl/sitemap.xml"
+    assert cands[-1] == "https://werk.ah.nl/sitemap.xml"
+    own = "Sitemap: https://www.example.nl/job-sitemap.xml"
+    assert sitemap_candidates(FakeFetcher(html=own), "https://www.example.nl/x")[0] == \
+        "https://www.example.nl/job-sitemap.xml"

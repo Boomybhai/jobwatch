@@ -59,6 +59,9 @@ JOB_PATH_RE = re.compile(
 LISTING_TAIL_RE = re.compile(r"^(search|results|all|page|category|categories|location|locations|team|teams|"
                              r"department|departments|alerts?|apply|login|faq|students?|graduates?|"
                              r"internships?|benefits|about|nl|en|de|fr)$", re.I)
+# "thank you for applying" pages that sitemaps list next to the jobs (Brunel: .../thank-you, bedank-pagina-...)
+THANKS_RE = re.compile(r"(?:^|[-_])(?:thank[-_]?you|thanks|bedankt|bedank[-_]?pagina|dank[-_]?je[-_]?wel|"
+                       r"bedankpagina|danke|merci)(?:[-_]|$)", re.I)
 
 
 def canonical_feed(adapter: str, match: str) -> str:
@@ -100,6 +103,8 @@ def is_job_url(url: str) -> bool:
     last = tail[-1]
     if LISTING_TAIL_RE.match(last) and len(tail) == 1:
         return False
+    if THANKS_RE.search(last):
+        return False
     # a job page has an id (digits) or a descriptive slug
     return bool(re.search(r"\d", "/".join(tail)) or any(s.count("-") + s.count("_") >= 2 for s in tail))
 
@@ -126,6 +131,9 @@ def sitemap_candidates(f: Fetcher, host_url: str) -> list[str]:
     except Exception:
         pass
     cands += [base + "/sitemap.xml", base + "/sitemap_index.xml"]
+    # the site's own sitemaps first: robots.txt sometimes names another site's sitemap
+    # (werkenbijsmurfitwestrock.nl points at werk.ah.nl), which would mix in that site's jobs
+    cands.sort(key=lambda c: urlsplit(c).netloc.lower() != parts.netloc.lower())
     seen, out = set(), []
     for c in cands:
         if c not in seen:
