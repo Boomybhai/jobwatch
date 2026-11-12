@@ -225,6 +225,9 @@ _LENIENT = re.compile(
     r"beginner|intermediate|conversational|a1|a2|b1|b2|willing to learn|willingness to learn|eager to learn|"
     r"open to learning|learn dutch|learning dutch|pre|pluspunt|voordeel|geen vereiste|niet vereist|"
     r"niet noodzakelijk|geen must|geen eis|basiskennis|basisniveau|enige kennis|bereid|wil leren|te leren)(?![a-z])")
+_BEHEERSING = re.compile(
+    r"(?<![a-z])beheersing (?:van|in|der) (?:de |het )?(?:[a-z]+e? (?:en|of|en/of|&) (?:de |het )?)?nederlands[a-z]*"
+    r"|(?<![a-z])nederlands[a-z]* (?:en [a-z]+ )?taal (?:goed |uitstekend |prima )?(?:te )?beheers")
 _TRAILING_ONLY = re.compile(
     r"(?<![a-z])(is (?:a |an |een )?|een |a |an )?(a plus|plus|advantage|asset|bonus|nice to have|nice-to-have|desirable|"
     r"beneficial|pre|pluspunt|voordeel)(?![a-z])")
@@ -251,6 +254,12 @@ def dutch_requirement(text: str) -> str:
     if not text:
         return ""
     t = _fold(text.lower())
+    # "goede beheersing van de Nederlandse (en Engelse) taal" always means required, whatever the rest
+    # of the posting says - unless that very sentence calls it a plus
+    for m in _BEHEERSING.finditer(t):
+        rest = re.split(r"[.;!?]", t[m.end(): m.end() + 60])[0]
+        if not _LENIENT.search(rest.replace("é", "e")):
+            return "required"
     lenient = strict = False
     for m in _DUTCH.finditer(t):
         before = t[max(0, m.start() - 45): m.start()]

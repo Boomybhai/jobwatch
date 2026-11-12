@@ -1634,6 +1634,11 @@ def test_min_years_dutch_and_implied(text, years):
     ("Experience with Aspen is a plus Fluent Dutch and English", "required"),
     ("Dutch is a plus", "lenient"),
     ("Basic Dutch is enough", "lenient"),
+    # "goede beheersing van de Nederlandse taal" is always a no, even if Dutch is called a plus elsewhere
+    ("Kennis van Nederlands is een pré. Verder vragen wij een goede beheersing van de Nederlandse taal.", "required"),
+    ("Goede beheersing van de Engelse en Nederlandse taal.", "required"),
+    ("Je hebt een uitstekende beheersing van het Nederlands", "required"),
+    ("Je beheerst de Engelse taal; beheersing van de Nederlandse taal is een pré.", "lenient"),
 ])
 def test_dutch_requirement_good_dutch(text, expected):
     from jobwatch.filters import dutch_requirement
