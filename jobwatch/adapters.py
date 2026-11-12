@@ -108,6 +108,25 @@ def workday_country_facet(data: dict, countries) -> dict:
 
     if wanted:
         walk(data.get("facets"))
+    if not found and wanted:
+        # no value is just "Netherlands": some tenants only offer a location facet whose values
+        # name the country with a city ("Leiden, Netherlands", "Netherlands - Veldhoven")
+        word = re.compile(r"\b(?:%s)\b" % "|".join(re.escape(w) for w in sorted(wanted, key=len, reverse=True)
+                                                    if len(w) > 3), re.I)
+
+        def walk_loose(nodes):
+            for node in nodes or []:
+                if not isinstance(node, dict):
+                    continue
+                param, values = node.get("facetParameter") or "", node.get("values") or []
+                if param and re.search("country|location", param, re.I):
+                    ids = [v.get("id") for v in values if isinstance(v, dict) and v.get("id")
+                           and not v.get("values") and word.search(str(v.get("descriptor") or ""))]
+                    if ids:
+                        found.append((param, ids))
+                walk_loose([v for v in values if isinstance(v, dict) and v.get("values")])
+
+        walk_loose(data.get("facets"))
     if not found:
         return {}
     found.sort(key=lambda pi: "country" not in pi[0].lower())
@@ -136,6 +155,11 @@ def fetch_workday(f: Fetcher, company: Company, max_jobs: int) -> list[Job]:
                          company.name, ", ".join(countries), filtered.get("total"))
             except Exception as exc:
                 log.info("    %s: Workday country filter failed (%s) - reading all jobs", company.name, exc)
+        elif (first.get("total") or 0) > max_jobs:
+            # big site, no filter found: name its facets so the next tune-up can see why
+            names = [str(n.get("facetParameter")) for n in first.get("facets") or [] if isinstance(n, dict)]
+            log.info("    %s: no Workday country filter among facets [%s] - reading the newest %d of %s job(s)",
+                     company.name, ", ".join(names), max_jobs, first.get("total"))
     jobs: list[Job] = []
     offset = 0
     total = None

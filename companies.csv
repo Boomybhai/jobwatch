@@ -51,7 +51,7 @@ Nexperia B.V.,High,High-tech & semiconductors,https://nexperia.wd3.myworkdayjobs
 Nobian Industrial Chemicals B.V.,High,Chemicals & process,https://careers.nobian.com/search/?optionsFacetsDD_country=NL,yes,html,auto,SuccessFactors job search (Netherlands),
 Nouryon Specialty Chemicals B.V.,High,Chemicals & process,https://www.nouryon.com/careers/engineers/,yes,auto,auto,Careers page (engineers),
 Nutricia Cuijk B.V.,High,FMCG & food,https://careers.danone.com/benelux/nl/home.html,yes,auto,auto,Careers page (Danone Benelux),careers URL found by web search 2026-11-03
-NXP Semiconductors Netherlands B.V.,High,High-tech & semiconductors,https://nxp.wd3.myworkdayjobs.com/careers?Location_Country=9696868b09c64d52a62ee13b052383cc&Location_Country=a04ea128f43a42e59b1e6a19e8f0b374,yes,workday,auto,Workday feed (Netherlands + Belgium filter in the link; the unfiltered search answered 422),
+NXP Semiconductors Netherlands B.V.,High,High-tech & semiconductors,https://nxp.wd3.myworkdayjobs.com/careers?Location_Country=9696868b09c64d52a62ee13b052383cc&Location_Country=a04ea128f43a42e59b1e6a19e8f0b374,no,workday,auto,Workday feed (Netherlands + Belgium filter in the link; the unfiltered search answered 422),disabled 2026-11-12: NXP's Workday answers 422 to every request from the runner since 2026-11-09 (with or without filters) - looks like a block
 Nyrstar Budel B.V.,High,"Metals, minerals & building materials",https://jobs.nyrstar.com/go/Budel-NL-NL/8739602/,yes,auto,auto,Careers page (Budel),
 OCI Nitrogen B.V.,High,Chemicals & process,https://oci-global.com/jobs/,yes,auto,auto,Careers page,
 Organon Pharma B.V.,High,"Pharma, biotech & medtech",https://jobs.organon.com/us/en/,yes,auto,auto,Careers page (global — filter Netherlands),careers URL found by web search 2026-11-03
@@ -159,7 +159,7 @@ McCain Foods Holland B.V.,Medium,FMCG & food,https://careers.mccain.com/nl/nl/,y
 Mead Johnson B.V.,Medium,Chemicals & process,https://careers.reckitt.com/,yes,auto,auto,Careers page (filter: Nijmegen),
 Momentive Performance Materials Silicones B.V.,Medium,Chemicals & process,https://momentive.wd1.myworkdayjobs.com/MC,yes,auto,auto,Workday job board,
 Mondi Maastricht N.V.,Medium,Paper & packaging,https://www.mondigroup.com/careers/,yes,auto,auto,Careers page,
-Mosa Meat,Medium,Startups & scale-ups,https://mosameat.com/careers,yes,auto,auto,Careers page,careers URL found by web search 2026-11-03
+Mosa Meat,Medium,Startups & scale-ups,https://careers.mosameat.com/,yes,auto,auto,Careers page (Homerun),careers URL found by web search 2026-11-03; Homerun board since 2026-11-12 (mosameat.com/careers only links to it)
 Myne Circular Metals B.V.,Medium,Startups & scale-ups,https://jobs.myne.eco/,yes,auto,auto,Careers page,
 N.V. Eneco,Medium,"Energy, fuels & gases",https://www.eneco.nl/over-ons/bij-ons-werken/,yes,auto,auto,Careers page,
 N.V. PWN Waterleidingbedrijf Noord-Holland,Medium,"Water, waste & circular",https://werkenbij.pwn.nl/vacatures,yes,auto,auto,Careers page,
@@ -260,7 +260,7 @@ Celanese Europe B.V.,Low,Chemicals & process,https://career-celanese.icims.com/j
 CelSian Glass & Solar B.V.,Low,Chemicals & process,https://www.celsian.nl/hiring/,yes,auto,auto,Careers page,
 Chemelot Campus B.V.,Low,Chemicals & process,https://carriereopchemelot.nl/vacatures/,yes,auto,auto,Vacancies across all Chemelot companies,
 Circularise B.V.,Low,Startups & scale-ups,https://apply.workable.com/circularise/,yes,auto,auto,Careers page,
-Cloetta Holland B.V.,Low,Chemicals & process,https://www.cloetta.com/en/career/,yes,auto,auto,Careers page,
+Cloetta Holland B.V.,Low,Chemicals & process,https://www.cloetta.com/en/career/,no,auto,auto,Careers page,disabled 2026-11-12: jobs open in pop-ups with no link of their own - can't be read automatically
 Dana Petroleum Netherlands B.V.,Low,Offshore & upstream,https://www.dana-petroleum.com/working-for-us/careers/,yes,auto,auto,Careers page (global — filter Netherlands),careers URL found by web search 2026-11-03
 Doral Hydrogen Europe B.V.,Low,"Energy, fuels & gases",,no,auto,auto,No careers page found,no careers page found — add a URL to enable
 Draka Comteq Fibre B.V.,Low,Chemicals & process,https://www.prysmian.com/en/careers,yes,auto,auto,Careers page (Prysmian; filter Eindhoven),
@@ -441,7 +441,7 @@ UBQ Materials NL B.V.,Medium,"Water, waste & circular",https://www.ubqmaterials.
 JBT Food & Dairy Systems B.V.,Medium,Process equipment & instrumentation,https://jbtm.wd108.myworkdayjobs.com/JBT_Marel_Career_Site,yes,auto,auto,Careers page (global — filter Netherlands),"IND recognised sponsor; food & dairy process equipment, Amsterdam (added in register sweep 2026-11-03)"
 Darling Ingredients International Holding B.V.,Medium,Food ingredients & agri-processing,https://www.darlingii.com/nl-be/careers,yes,auto,auto,Careers page (global — filter Netherlands),"IND recognised sponsor; Rendac/Sonac/Rousselot — rendering, gelatin, bio-ingredients (added in register sweep 2026-11-03)"
 KSB Industries B.V.,Medium,Process equipment & instrumentation,https://www.ksb.com/nl-nl/over-ksb/werken-bij-ksb,yes,auto,auto,Careers page (NL),IND recognised sponsor; pumps & valves (added in register sweep 2026-11-03)
-Mokveld Valves B.V.,Medium,Process equipment & instrumentation,https://mokveld.com/en/careers-2,yes,auto,auto,Careers page,"IND recognised sponsor; control & safety valves, Gouda (added in register sweep 2026-11-03)"
+Mokveld Valves B.V.,Medium,Process equipment & instrumentation,https://maakhetbijmokveld.nl/vacatureoverzicht,yes,auto,auto,Careers page,"IND recognised sponsor; control & safety valves, Gouda (added in register sweep 2026-11-03); Dutch vacancy list since 2026-11-12 (mokveld.com/en/careers-2 only had a Norway job)"
 Team Industrial Services Netherlands B.V.,Low,"Engineering, consulting & inspection",https://www.teaminc.com/careers/,yes,auto,auto,Careers page (global — filter Netherlands),IND recognised sponsor; inspection & maintenance services (added in register sweep 2026-11-03)
 Verwater Group B.V.,Low,"Engineering, consulting & inspection",https://www.verwater.com/nl/werken-verwater/,yes,auto,auto,Careers page (NL),IND recognised sponsor; tank & industrial installation maintenance (added in register sweep 2026-11-03)
 KERN Engineers B.V.,Low,Recruitment agency,https://kernengineers.nl/,yes,auto,auto,Website (no careers page found),IND recognised sponsor; technical secondment (added in register sweep 2026-11-03)

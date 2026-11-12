@@ -1527,3 +1527,23 @@ def test_sitemap_candidates_try_own_host_before_foreign_robots_sitemap():
     own = "Sitemap: https://www.example.nl/job-sitemap.xml"
     assert sitemap_candidates(FakeFetcher(html=own), "https://www.example.nl/x")[0] == \
         "https://www.example.nl/job-sitemap.xml"
+
+
+
+
+def test_workday_location_facet_with_city_names():
+    from jobwatch.adapters import workday_country_facet
+    answer = {"facets": [
+        {"facetParameter": "jobFamilyGroup", "values": [{"descriptor": "Netherlands Desk", "id": "fam"}]},
+        {"facetParameter": "locations", "values": [
+            {"descriptor": "Leiden, Netherlands", "id": "leiden"},
+            {"descriptor": "Netherlands - Veldhoven", "id": "veldhoven"},
+            {"descriptor": "Beerse, Belgium", "id": "beerse"},
+            {"descriptor": "Raritan, NJ, United States", "id": "us"}]}]}
+    assert workday_country_facet(answer, ["Netherlands", "Belgium"]) == {"locations": ["leiden", "veldhoven", "beerse"]}
+    # an exact country facet still wins over city names
+    answer["facets"].append({"facetParameter": "Location_Country", "values": [{"descriptor": "Netherlands", "id": "nl"}]})
+    assert workday_country_facet(answer, ["Netherlands"]) == {"Location_Country": ["nl"]}
+    # short codes like "NL"/"BE" are not matched loosely
+    assert workday_country_facet({"facets": [{"facetParameter": "locations", "values": [
+        {"descriptor": "BE Remote", "id": "x"}]}]}, ["Belgium"]) == {}
