@@ -225,12 +225,15 @@ _LENIENT = re.compile(
     r"beginner|intermediate|conversational|a1|a2|b1|b2|willing to learn|willingness to learn|eager to learn|"
     r"open to learning|learn dutch|learning dutch|pre|pluspunt|voordeel|geen vereiste|niet vereist|"
     r"niet noodzakelijk|geen must|geen eis|basiskennis|basisniveau|enige kennis|bereid|wil leren|te leren)(?![a-z])")
+_TRAILING_ONLY = re.compile(
+    r"(?<![a-z])(is (?:a |an |een )?|een |a |an )?(a plus|plus|advantage|asset|bonus|nice to have|nice-to-have|desirable|"
+    r"beneficial|pre|pluspunt|voordeel)(?![a-z])")
 # clear "you must be fluent" wording near the mention
 _STRICT = re.compile(
     r"(?<![a-z])(fluent|fluently|fluency|native|mother tongue|excellent|perfect|proficient|proficiency|"
     r"full professional|strong command|excellent command|c1|c2|must|required|requirement|mandatory|essential|"
     r"necessary|vloeiend|uitstekend|uitstekende|perfecte|moedertaal|moedertaalniveau|vereist|verplicht|"
-    r"noodzakelijk|een must|in woord en geschrift|speak|spreek|spreekt|beheerst)(?![a-z])")
+    r"noodzakelijk|een must|in woord en geschrift|in woord als geschrift|woord en geschrift|speak|spreek|spreekt|beheerst)(?![a-z])")
 # "good written Dutch" / "goede mondelinge en schriftelijke vaardigheden in het Nederlands en Engels" is a
 # requirement too - but only when the sentence is about language ("a strong Dutch brand" is not)
 _GOOD = re.compile(
@@ -254,7 +257,9 @@ def dutch_requirement(text: str) -> str:
         before = re.split(r"[.;!?]", before)[-1]          # stay inside the sentence
         after_short = re.split(r"[.;!?]", t[m.end(): m.end() + 35])[0]
         after_long = re.split(r"[.;!?]", t[m.end(): m.end() + 60])[0]   # "... en Engelse taal in woord en geschrift"
-        if _LENIENT.search(before + " " + after_short):
+        # "... is a plus / een pré" belongs to what comes BEFORE it: in a bullet list without full stops
+        # ("Lean Six Sigma is een pré  Goede beheersing van de Nederlandse taal") it is about the previous bullet
+        if _LENIENT.search(_TRAILING_ONLY.sub(" ", before) + " " + after_short):
             lenient = True
         elif _STRICT.search(before + " " + after_long):
             strict = True

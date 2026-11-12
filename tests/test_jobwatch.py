@@ -1628,6 +1628,12 @@ def test_min_years_dutch_and_implied(text, years):
     ("We are a good Dutch employer.", ""),
     ("Good English skills; Dutch is a plus.", "lenient"),
     ("Excellent English. Good knowledge of Dutch is an advantage.", "lenient"),
+    # bullets without full stops: the "pré" belongs to the bullet before (Eurofins, 2026-11-12)
+    ("Bekend met LEAN Six Sigma of DOE technieken is een pré Een goede beheersing van de Nederlandse en Engelse "
+     "taal, zowel in woord als geschrift Je bent zelfstandig", "required"),
+    ("Experience with Aspen is a plus Fluent Dutch and English", "required"),
+    ("Dutch is a plus", "lenient"),
+    ("Basic Dutch is enough", "lenient"),
 ])
 def test_dutch_requirement_good_dutch(text, expected):
     from jobwatch.filters import dutch_requirement
