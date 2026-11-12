@@ -25,7 +25,7 @@ WORDS = {
 NUM = r"(\d{1,2}|" + "|".join(sorted(WORDS, key=len, reverse=True)) + r")"
 YRS = r"(?:years?|yrs?|jaar|jaren|ans|années|annees)"
 # words allowed between "N years" and "experience"
-GAP = r"(?:['’]s?\s+)?(?:\s*\w+[\s,/-]+){0,6}?"
+GAP = r"(?:['’]s?\s+)?(?:\s*\w+[\s,/-]+){0,6}?\s*"
 EXP = r"(?:experience|ervaring|werkervaring|work experience|\s*d['’]\s*exp[ée]rience|exp[ée]rience)"
 
 PATTERNS = [
@@ -40,7 +40,7 @@ PATTERNS = [
 ]
 NO_EXPERIENCE = re.compile(
     r"(no (?:prior |previous |work )?experience (?:is )?(?:required|needed|necessary)"
-    r"|recent(?:ly)? graduat|fresh graduate|starter|entry[- ]level|graduate (?:programme|program)"
+    r"|recent(?:ly)? graduat|fresh graduate|(?<![a-z])starters?(?![a-z])|entry[- ]level|graduate (?:programme|program)"
     r"|0\s*(?:-|–|to)\s*\d\s*" + YRS + r"|geen (?:werk)?ervaring (?:vereist|nodig)|jeune dipl[ôo]m|d[ée]butant|aucune exp[ée]rience)",
     re.I,
 )
@@ -51,7 +51,7 @@ def _n(token: str) -> int:
     return int(token) if token.isdigit() else WORDS[token]
 
 
-def min_years_required(text: str) -> int | None:
+def min_years_required(text: str, implied: bool = False) -> int | None:
     """Smallest number of years the text asks for, or None if it doesn't say.
 
     "3-5 years" -> 3, "at least 5 years" -> 5, "starter / recent graduate" -> 0.
@@ -72,7 +72,36 @@ def min_years_required(text: str) -> int | None:
         return min(found)
     if NO_EXPERIENCE.search(text):
         return 0
+    if implied and _implied_experience(text):
+        return IMPLIED_YEARS
     return None
+
+
+# "relevant experience in ..." without a number: not a starter job. Counted as IMPLIED_YEARS.
+IMPLIED_YEARS = 3
+_IMPLIED = re.compile(
+    r"(?<![a-z])(relevante (?:werk)?ervaring|ruime (?:werk)?ervaring|aantoonbare (?:werk)?ervaring|ervaring met [^.;]{0,60} in een"
+    r"|(?:enkele|meerdere|een aantal|aantal|diverse) jaren|ervaren (?:professional|engineer|collega|kandidaat)"
+    r"|relevant (?:work(?:ing)? |professional |industry |industrial )?experience|proven (?:work |working )?experience"
+    r"|proven track record|extensive experience|solid experience|significant experience|substantial experience"
+    r"|(?:several|a few|some|many|multiple) years|experienced (?:professional|engineer|candidate))(?![a-z])", re.I)
+# ...unless the same sentence says it's optional, or an internship counts
+_IMPLIED_SOFT = re.compile(
+    r"(?<![a-z])(pr[eé]|plus|pluspunt|voordeel|preferred|preferably|bij voorkeur|advantage|asset|bonus|nice to have|"
+    r"desirable|niet vereist|geen vereiste|not required|stage|stages|internship|internships|afstuder\w*|thesis|"
+    r"of gelijkwaardig|or equivalent)(?![a-z])", re.I)
+
+
+def _implied_experience(text: str) -> bool:
+    for m in _IMPLIED.finditer(text):
+        start = max(text.rfind(".", 0, m.start()), text.rfind(";", 0, m.start())) + 1
+        ends = [i for i in (text.find(".", m.end()), text.find(";", m.end())) if i != -1]
+        before, after = text[start: m.start()], text[m.end(): min(ends) if ends else len(text)]
+        # "preferably" after the phrase usually qualifies something else ("..., preferably in chemicals")
+        after = re.sub(r"(?i)\b(preferably|preferred|bij voorkeur)\b", " ", after)
+        if not _IMPLIED_SOFT.search(before) and not _IMPLIED_SOFT.search(after):
+            return True
+    return False
 
 
 # ------------------------------------------------------------- descriptions
@@ -117,7 +146,10 @@ def _visible_text(html: str) -> str:
 def annotate_experience(f: Fetcher, job: Job) -> None:
     """Fill job.years (None when unknown or the page couldn't be read)."""
     try:
-        job.years = min_years_required(job_description(f, job))
+        junior = re.search(r"(?<![a-z])(junior|trainee|traineeship|graduate|starter|young professional|entry[- ]level)(?![a-z])",
+                           job.title, re.I)
+        implied = getattr(getattr(f, "settings", None), "experience_implied_counts", True) and not junior
+        job.years = min_years_required(job_description(f, job), implied=bool(implied))
     except Exception as exc:
         log.info("Couldn't read description for %s (%s) — keeping it", job.title, exc)
         job.years = None

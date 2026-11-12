@@ -36,6 +36,7 @@ class Settings:
     notify_errors_every_runs: int = 0   # 0 = never include error list in emails
     label: str = ""                     # e.g. "Belgium": shown in notification titles
     workday_countries: list[str] = field(default_factory=list)  # Workday sites: read only these countries
+    experience_implied_counts: bool = True  # "relevant experience in ..." without a number counts as 3 years
     repeat_hours: int = 24              # repeat jobs already shown this many hours back (0 = off)
 
 

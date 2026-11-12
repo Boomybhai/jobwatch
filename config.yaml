@@ -915,6 +915,12 @@ max_years_experience: 2
 # true = still alert (recommended)   false = skip them
 keep_if_experience_unknown: true
 
+# Some postings give no number but clearly want experience ("relevante ervaring met HSEQ in de
+# procesindustrie", "proven experience in ..."). true = count those as 3 years (so they are
+# skipped while max_years_experience is 2), unless the sentence says it's a plus / an internship
+# counts, or the title says junior / trainee / graduate.   false = treat them as unknown.
+experience_implied_counts: true
+
 # ------------------------------------------------------------ 4. LOCATION
 # Wanted: the Netherlands and Belgium. Everything else is dropped.
 # jobwatch looks for a place in: the location the careers site gives, the job

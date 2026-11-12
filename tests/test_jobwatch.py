@@ -1591,3 +1591,59 @@ def test_html_job_card_link_uses_its_heading_as_title():
       <a href="/werken-bij/alle-vacatures/3-lang/">{teaser}</a></main>"""
     jobs = parse_html_jobs(html, "https://www.example.nl/werken-bij/alle-vacatures/", "Acme")
     assert [j.title for j in jobs] == ["Adviseur Waterveiligheid", "Procestechnoloog Leiden", "Junior Chemist", "Archivist"]
+
+
+@pytest.mark.parametrize("text,years", [
+    # "N jaar ervaring" with nothing in between was not read at all (LyondellBasell, 2026-11-12)
+    ("Master’s degree Chemische Technologie; 3-5 jaar ervaring in vergelijkbare chemische productieomgeving; "
+     "Als energieke zelfstarter, hou je van uitdagingen", 3),
+    ("Je hebt 3 jaar ervaring.", 3),
+    ("5 yrs experience", 5),
+    ("Als energieke zelfstarter hou je van uitdagingen.", None),     # not a "starter"
+    ("Ideal for a starter.", 0),
+    # no number, but clearly not a starter job (Envalior HSEQ Coördinator, 2026-11-12)
+    ("Relevante ervaring met HSEQ in een productie- of procesindustrie, bij voorkeur in een chemische omgeving.", 3),
+    ("You have relevant experience in a chemical plant.", 3),
+    ("Several years of experience in process safety.", 3),
+    ("Relevant experience is a plus.", None),
+    ("Preferably some relevant experience in a plant.", None),
+    ("Relevant experience through internships counts.", None),
+    ("Ervaring met GIS-toepassingen is een pré.", None),
+    ("You are a recent graduate with some relevant experience.", 0),
+    ("You enjoy working in a team.", None),
+])
+def test_min_years_dutch_and_implied(text, years):
+    assert min_years_required(text, implied=True) == years
+    if years == 3 and not any(c.isdigit() for c in text):
+        assert min_years_required(text) is None                      # the implied rule can be switched off
+
+
+@pytest.mark.parametrize("text,expected", [
+    # "good" Dutch is a requirement too (Haskoning / LyondellBasell, 2026-11-12)
+    ("Goede mondelinge en schriftelijke vaardigheden in het Nederlands en Engels; Duits is een pré.", "required"),
+    ("Goede communicatieve vaardigheden, zowel in het Nederlands als in het Engels.", "required"),
+    ("Good written and spoken Dutch and English.", "required"),
+    ("Strong communication skills in English and Dutch.", "required"),
+    ("Join a strong Dutch brand with good benefits.", ""),
+    ("We are a good Dutch employer.", ""),
+    ("Good English skills; Dutch is a plus.", "lenient"),
+    ("Excellent English. Good knowledge of Dutch is an advantage.", "lenient"),
+])
+def test_dutch_requirement_good_dutch(text, expected):
+    from jobwatch.filters import dutch_requirement
+    assert dutch_requirement(text) == expected
+
+
+def test_implied_experience_is_ignored_for_junior_titles(settings):
+    from jobwatch.experience import annotate_experience
+    text = "You have relevant experience in a chemical plant. " * 10
+
+    class F(FakeFetcher):
+        pass
+    f = F()
+    f.settings = settings
+    senior = Job(company="A", title="HSEQ Coördinator", url="https://a.nl/job/1", description=text)
+    junior = Job(company="A", title="Junior Process Engineer", url="https://a.nl/job/2", description=text)
+    annotate_experience(f, senior)
+    annotate_experience(f, junior)
+    assert senior.years == 3 and junior.years is None

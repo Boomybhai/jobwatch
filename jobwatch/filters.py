@@ -231,6 +231,14 @@ _STRICT = re.compile(
     r"full professional|strong command|excellent command|c1|c2|must|required|requirement|mandatory|essential|"
     r"necessary|vloeiend|uitstekend|uitstekende|perfecte|moedertaal|moedertaalniveau|vereist|verplicht|"
     r"noodzakelijk|een must|in woord en geschrift|speak|spreek|spreekt|beheerst)(?![a-z])")
+# "good written Dutch" / "goede mondelinge en schriftelijke vaardigheden in het Nederlands en Engels" is a
+# requirement too - but only when the sentence is about language ("a strong Dutch brand" is not)
+_GOOD = re.compile(
+    r"(?<![a-z])(good|very good|strong|goede|sterke|written|spoken|verbal|oral|writing|command|communication|"
+    r"mondelinge|mondeling|schriftelijke|schriftelijk|beheersing|taalvaardigheid|communicatieve|communicatief)(?![a-z])")
+_LANGUAGE = re.compile(
+    r"(?<![a-z])(english|engels|engelse|language|languages|taal|talen|skills|vaardigheden|vaardigheid|vaardig|"
+    r"command|beheersing|taalvaardigheid|written|spoken|writing|schriftelijk|schriftelijke|mondeling|mondelinge)(?![a-z])")
 
 
 def dutch_requirement(text: str) -> str:
@@ -249,6 +257,8 @@ def dutch_requirement(text: str) -> str:
         if _LENIENT.search(before + " " + after_short):
             lenient = True
         elif _STRICT.search(before + " " + after_long):
+            strict = True
+        elif _GOOD.search(before + " " + after_long) and _LANGUAGE.search(before + " " + after_long):
             strict = True
     return "lenient" if lenient else ("required" if strict else "")
 
