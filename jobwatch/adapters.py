@@ -653,6 +653,12 @@ def parse_html_jobs(html: str, base_url: str, company: str) -> list[Job]:
         text = " ".join(a.get_text(" ", strip=True).split())
         if not text:
             text = (a.get("title") or a.get("aria-label") or "").strip()
+        # a whole card inside the link (title + teaser text): the heading in it is the job title
+        # (bold text only counts when the link text is too long to be a title itself)
+        head = a.find(["h1", "h2", "h3", "h4", "h5", "h6"]) or (a.find(["strong", "b"]) if len(text) > 140 else None)
+        head_text = " ".join(head.get_text(" ", strip=True).split()) if head else ""
+        if head_text != text and 6 <= len(head_text) <= 140 and head_text.lower() not in NAV_WORDS:
+            text = head_text
         if not (6 <= len(text) <= 140) or text.lower() in NAV_WORDS:
             continue
         absolute = urljoin(base_url, href).split("#")[0]

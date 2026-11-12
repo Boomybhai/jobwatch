@@ -1577,3 +1577,17 @@ def test_workday_city_filter_also_reads_newest_unfiltered_jobs():
     # the filtered job first, then the newest unfiltered ones (a Dutch site the city filter didn't cover)
     assert [j.title for j in res.jobs] == ["Chemist Haarlem", "Process Engineer Veghel", "Buyer"]
     assert sent[0] == ({}, 0) and sent[1] == ({"locations": ["nl-remote", "haarlem"]}, 0)
+
+
+def test_html_job_card_link_uses_its_heading_as_title():
+    from jobwatch.adapters import parse_html_jobs
+    teaser = "Wil jij bijdragen aan een veilig en klimaatbestendig gebied? " * 5
+    html = f"""<main>
+      <a href="/werken-bij/alle-vacatures/1353298-adviseur-waterveiligheid/"><h3>Adviseur Waterveiligheid</h3>
+         <p>{teaser}</p><span>Uren per week: 36</span></a>
+      <a href="/werken-bij/alle-vacatures/1-procestechnoloog/">Procestechnoloog <b>Leiden</b></a>
+      <a href="/werken-bij/alle-vacatures/4-chemist/"><strong>Junior Chemist</strong> {teaser}</a>
+      <a href="/werken-bij/alle-vacatures/2-archivist/">Archivist</a>
+      <a href="/werken-bij/alle-vacatures/3-lang/">{teaser}</a></main>"""
+    jobs = parse_html_jobs(html, "https://www.example.nl/werken-bij/alle-vacatures/", "Acme")
+    assert [j.title for j in jobs] == ["Adviseur Waterveiligheid", "Procestechnoloog Leiden", "Junior Chemist", "Archivist"]
