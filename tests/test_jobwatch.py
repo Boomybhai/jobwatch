@@ -1547,3 +1547,33 @@ def test_workday_location_facet_with_city_names():
     # short codes like "NL"/"BE" are not matched loosely
     assert workday_country_facet({"facets": [{"facetParameter": "locations", "values": [
         {"descriptor": "BE Remote", "id": "x"}]}]}, ["Belgium"]) == {}
+
+
+def test_workday_city_filter_also_reads_newest_unfiltered_jobs():
+    from jobwatch.adapters import workday_country_facet
+    answer = {"total": 900, "jobPostings": [{"title": "Process Engineer Veghel", "externalPath": "/job/NLD-Veghel/1"},
+                                            {"title": "Buyer", "externalPath": "/job/US/2"}],
+              "facets": [{"facetParameter": "locationMainGroup", "values": [
+                  {"facetParameter": "locations", "descriptor": "Locations", "values": [
+                      {"descriptor": "Netherlands - Remote", "id": "nl-remote"},
+                      {"descriptor": "NLD - North Holland - Haarlem", "id": "haarlem"},
+                      {"descriptor": "BELARUS - Minsk", "id": "minsk"},
+                      {"descriptor": "USA - New Jersey", "id": "us"}]}]}]}
+    assert workday_country_facet(answer, ["Netherlands", "Belgium"]) == {"locations": ["nl-remote", "haarlem"]}
+    assert workday_country_facet(answer, ["Netherlands", "Belgium"], loose=False) == {}
+
+    sent = []
+
+    class F(FakeFetcher):
+        settings = Settings(workday_countries=["Netherlands", "Belgium"])
+
+        def post_json(self, url, payload):
+            sent.append((payload["appliedFacets"], payload["offset"]))
+            if payload["appliedFacets"]:
+                return {"total": 1, "jobPostings": [{"title": "Chemist Haarlem", "externalPath": "/job/Haarlem/3"}]}
+            return answer if payload["offset"] == 0 else {"total": 0, "jobPostings": []}
+
+    res = check_company(F(), Company("Acme", "https://acme.wd3.myworkdayjobs.com/Ext"), 40)
+    # the filtered job first, then the newest unfiltered ones (a Dutch site the city filter didn't cover)
+    assert [j.title for j in res.jobs] == ["Chemist Haarlem", "Process Engineer Veghel", "Buyer"]
+    assert sent[0] == ({}, 0) and sent[1] == ({"locations": ["nl-remote", "haarlem"]}, 0)

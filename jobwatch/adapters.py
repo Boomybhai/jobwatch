@@ -82,7 +82,7 @@ COUNTRY_ALIASES = {
 }
 
 
-def workday_country_facet(data: dict, countries) -> dict:
+def workday_country_facet(data: dict, countries, loose: bool = True) -> dict:
     """The site's own country filter for these countries, from a Workday search answer's facet list.
 
     Tenants name the facet differently (Location_Country, locationCountry, ...) and sometimes
@@ -108,11 +108,13 @@ def workday_country_facet(data: dict, countries) -> dict:
 
     if wanted:
         walk(data.get("facets"))
-    if not found and wanted:
+    if not found and wanted and loose:
         # no value is just "Netherlands": some tenants only offer a location facet whose values
         # name the country with a city ("Leiden, Netherlands", "Netherlands - Veldhoven")
         word = re.compile(r"\b(?:%s)\b" % "|".join(re.escape(w) for w in sorted(wanted, key=len, reverse=True)
                                                     if len(w) > 3), re.I)
+        # ...or with its three-letter code in front ("NLD - North Holland - Haarlem")
+        code = re.compile(r"(?:%s)\b" % "|".join(re.escape(w.upper()) for w in wanted if len(w) == 3))
 
         def walk_loose(nodes):
             for node in nodes or []:
@@ -121,7 +123,8 @@ def workday_country_facet(data: dict, countries) -> dict:
                 param, values = node.get("facetParameter") or "", node.get("values") or []
                 if param and re.search("country|location", param, re.I):
                     ids = [v.get("id") for v in values if isinstance(v, dict) and v.get("id")
-                           and not v.get("values") and word.search(str(v.get("descriptor") or ""))]
+                           and not v.get("values") and (word.search(str(v.get("descriptor") or ""))
+                                                        or code.match(str(v.get("descriptor") or "")))]
                     if ids:
                         found.append((param, ids))
                 walk_loose([v for v in values if isinstance(v, dict) and v.get("values")])
@@ -141,12 +144,17 @@ def fetch_workday(f: Fetcher, company: Company, max_jobs: int) -> list[Job]:
     def page(offset: int, applied: dict) -> dict:
         return f.post_json(api, {"appliedFacets": applied, "limit": 20, "offset": offset, "searchText": search})
 
-    first = None
+    first = also_all = None
     countries = getattr(getattr(f, "settings", None), "workday_countries", None) or []
     if not facets and countries:
         # read only the wanted countries' jobs, so big employers' Dutch jobs aren't cut off at max_jobs
         first = page(0, {})
-        cf = workday_country_facet(first, countries)
+        cf = workday_country_facet(first, countries, loose=False)
+        if not cf:
+            # only city-style location values match: they may not cover every Dutch site, so the
+            # newest unfiltered jobs are read as well (below) - never fewer jobs than without a filter
+            cf = workday_country_facet(first, countries)
+            also_all = first if cf else None
         if cf:
             try:
                 filtered = page(0, cf)
@@ -154,12 +162,41 @@ def fetch_workday(f: Fetcher, company: Company, max_jobs: int) -> list[Job]:
                 log.info("    %s: Workday country filter %s -> %s job(s)",
                          company.name, ", ".join(countries), filtered.get("total"))
             except Exception as exc:
+                also_all = None
                 log.info("    %s: Workday country filter failed (%s) - reading all jobs", company.name, exc)
         elif (first.get("total") or 0) > max_jobs:
             # big site, no filter found: name its facets so the next tune-up can see why
             names = [str(n.get("facetParameter")) for n in first.get("facets") or [] if isinstance(n, dict)]
-            log.info("    %s: no Workday country filter among facets [%s] - reading the newest %d of %s job(s)",
-                     company.name, ", ".join(names), max_jobs, first.get("total"))
+            log.info("    %s: no Workday country filter among facets [%s] (location values like %s) - "
+                     "reading the newest %d of %s job(s)", company.name, ", ".join(names),
+                     _workday_location_samples(first), max_jobs, first.get("total"))
+    jobs = _workday_read(company, public, page, first, facets, max_jobs)
+    if also_all is not None:
+        seen = {j.id for j in jobs}
+        jobs += [j for j in _workday_read(company, public, page, also_all, {}, max_jobs, keep_on_error=True)
+                 if j.id not in seen]
+    return jobs
+
+
+def _workday_location_samples(data: dict, limit: int = 6) -> list[str]:
+    """A few value names from a Workday answer's location facets (for the log)."""
+    out: list[str] = []
+
+    def walk(nodes):
+        for node in nodes or []:
+            if not isinstance(node, dict):
+                continue
+            values = [v for v in node.get("values") or [] if isinstance(v, dict)]
+            if re.search("country|location", str(node.get("facetParameter") or ""), re.I):
+                out.extend(str(v.get("descriptor")) for v in values if not v.get("values"))
+            walk([v for v in values if v.get("values")])
+
+    walk(data.get("facets"))
+    return out[:limit]
+
+
+def _workday_read(company: Company, public: str, page, first, facets: dict, max_jobs: int,
+                  keep_on_error: bool = False) -> list[Job]:
     jobs: list[Job] = []
     offset = 0
     total = None
@@ -170,7 +207,7 @@ def fetch_workday(f: Fetcher, company: Company, max_jobs: int) -> list[Job]:
             else:
                 data = page(offset, facets)
         except Exception as exc:
-            if not jobs:
+            if not jobs and not keep_on_error:
                 raise
             # a later page failed (NXP answered 422 mid-way): keep the newest jobs already read
             log.info("    %s: Workday page at offset %d failed (%s) - keeping %d job(s)",
