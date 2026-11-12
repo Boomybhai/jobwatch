@@ -297,6 +297,89 @@ include_keywords:
   - water quality
   - waterkwaliteit
   - slibverwerking
+  # Dutch compound titles and plurals (added 2026-11-12: keywords match whole words only, so "Procesengineer",
+  # "Watertechnoloog", "Milieucoördinator" or "Chemicals" were not matched by proces/water/milieu/chemical)
+  - procesengineer
+  - proces engineer
+  - proces technoloog
+  - procesontwikkelaar
+  - procesontwikkeling
+  - procesoptimalisatie
+  - procesontwerper
+  - procesontwerp
+  - procesinstallaties
+  - procesindustrie
+  - procesautomatisering
+  - procesbeheersing
+  - chemisch
+  - chemische
+  - chemicals
+  - scheikundig
+  - scheikundige
+  - scheikunde
+  - petrochemicals
+  - petrochemische
+  - biochemical
+  - biochemisch
+  - biotechnoloog
+  - biotechnologist
+  - bioprocestechnoloog
+  - watertechnoloog
+  - afvalwatertechnoloog
+  - afvalwaterzuivering
+  - afvalwaterbehandeling
+  - rioolwaterzuivering
+  - waterzuiveringstechnoloog
+  - zuiveringstechnologie
+  - drinkwatertechnoloog
+  - drinkwaterproductie
+  - waterketen
+  - waste-water
+  - effluent
+  - sewage
+  - sludge
+  - water reuse
+  - milieucoördinator
+  - milieucoordinator
+  - milieudeskundige
+  - medewerker milieu
+  - specialist milieu
+  - milieu engineer
+  - milieu-ingenieur
+  - milieu en veiligheid
+  - veiligheid en milieu
+  - coördinator milieu
+  - veiligheidsdeskundige
+  - hsse
+  - sheq
+  - hvk
+  - mvk
+  - psm
+  - energieadviseur
+  - energieconsultant
+  - energiespecialist
+  - energie engineer
+  - energietechniek
+  - energy consultant
+  - energy specialist
+  - energy analyst
+  - energy advisor
+  - energy adviser
+  - duurzaamheidscoördinator
+  - duurzaamheidscoordinator
+  - duurzaamheidsspecialist
+  - tech transfer
+  - technology transfer
+  - msat
+  - cqv
+  - projectingenieur
+  - productontwikkelaar
+  - productontwikkeling
+  - product developer
+  - product development
+  - research associate
+  - r&d technologist
+  - r&d technoloog
 # ...and NONE of these words.
 exclude_keywords:
   - senior
@@ -331,6 +414,38 @@ exclude_keywords:
   - lehrstelle
   - technicien
   - staff
+  # Dutch compound forms of the words above (added 2026-11-12: whole-word matching let
+  # "Storingsmonteur" and "Procesoperator" through)
+  - procesoperator
+  - productieoperator
+  - machineoperator
+  - inpakoperator
+  - operators
+  - storingsmonteur
+  - onderhoudsmonteur
+  - servicemonteur
+  - elektromonteur
+  - monteurs
+  - technicus
+  - procestechnicus
+  - onderhoudstechnicus
+  - storingstechnicus
+  - accountmanager
+  - projectmanager
+  - productiemanager
+  - teamleider
+  - teamleader
+  - productiemedewerker
+  - medewerker productie
+  - ploegendienst
+  - 2 ploegen
+  - 3 ploegen
+  - 5 ploegen
+  - stagiaire
+  - afstudeerstage
+  - meewerkstage
+  - bijbaan
+  - vakantiewerk
 
 # ---------------------------------------------------------- LANGUAGE
 # true = drop jobs whose description clearly demands fluent / native Dutch
@@ -589,6 +704,89 @@ favourite_keywords:
   - water quality
   - waterkwaliteit
   - slibverwerking
+  # Dutch compound titles and plurals (added 2026-11-12: keywords match whole words only, so "Procesengineer",
+  # "Watertechnoloog", "Milieucoördinator" or "Chemicals" were not matched by proces/water/milieu/chemical)
+  - procesengineer
+  - proces engineer
+  - proces technoloog
+  - procesontwikkelaar
+  - procesontwikkeling
+  - procesoptimalisatie
+  - procesontwerper
+  - procesontwerp
+  - procesinstallaties
+  - procesindustrie
+  - procesautomatisering
+  - procesbeheersing
+  - chemisch
+  - chemische
+  - chemicals
+  - scheikundig
+  - scheikundige
+  - scheikunde
+  - petrochemicals
+  - petrochemische
+  - biochemical
+  - biochemisch
+  - biotechnoloog
+  - biotechnologist
+  - bioprocestechnoloog
+  - watertechnoloog
+  - afvalwatertechnoloog
+  - afvalwaterzuivering
+  - afvalwaterbehandeling
+  - rioolwaterzuivering
+  - waterzuiveringstechnoloog
+  - zuiveringstechnologie
+  - drinkwatertechnoloog
+  - drinkwaterproductie
+  - waterketen
+  - waste-water
+  - effluent
+  - sewage
+  - sludge
+  - water reuse
+  - milieucoördinator
+  - milieucoordinator
+  - milieudeskundige
+  - medewerker milieu
+  - specialist milieu
+  - milieu engineer
+  - milieu-ingenieur
+  - milieu en veiligheid
+  - veiligheid en milieu
+  - coördinator milieu
+  - veiligheidsdeskundige
+  - hsse
+  - sheq
+  - hvk
+  - mvk
+  - psm
+  - energieadviseur
+  - energieconsultant
+  - energiespecialist
+  - energie engineer
+  - energietechniek
+  - energy consultant
+  - energy specialist
+  - energy analyst
+  - energy advisor
+  - energy adviser
+  - duurzaamheidscoördinator
+  - duurzaamheidscoordinator
+  - duurzaamheidsspecialist
+  - tech transfer
+  - technology transfer
+  - msat
+  - cqv
+  - projectingenieur
+  - productontwikkelaar
+  - productontwikkeling
+  - product developer
+  - product development
+  - research associate
+  - r&d technologist
+  - r&d technoloog
 
 # true  = ONLY alert on favourites (chemical / process engineering titles)
 # false = alert on everything that passes section 1, favourites starred and listed first
