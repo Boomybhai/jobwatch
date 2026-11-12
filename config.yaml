@@ -147,6 +147,156 @@ include_keywords:
   - circulair
   - circular economy
   - grondstoffen
+  # process safety, permits & regulators (added 2026-11-12 so omgevingsdienst / safety-consultancy titles match)
+  - brzo
+  - seveso
+  - omgevingsveiligheid
+  - externe veiligheid
+  - industriële veiligheid
+  - industriele veiligheid
+  - vergunningverlener milieu
+  - vergunningverlener industrie
+  - vergunningverlener brzo
+  - vergunningverlening milieu
+  - toezichthouder milieu
+  - toezichthouder brzo
+  - toezichthouder industrie
+  - toezichthouder milieu en veiligheid
+  - inspecteur milieu
+  - milieu-inspecteur
+  - milieuinspecteur
+  - inspecteur brzo
+  - inspecteur veiligheid
+  - inspecteur industrie
+  - adviseur milieu
+  - milieuadviseur
+  - adviseur omgevingsveiligheid
+  - adviseur externe veiligheid
+  - adviseur veiligheid
+  - veiligheidsadviseur
+  - veiligheidsingenieur
+  - milieutechnoloog
+  - milieutechniek
+  - milieuspecialist
+  - milieukunde
+  - risk engineer
+  - risk engineering
+  - risk assessment
+  - quantitative risk
+  - qra
+  - technical safety
+  - functional safety
+  - safety consultant
+  - safety specialist
+  - safety advisor
+  - safety adviser
+  - loss prevention
+  - hazop
+  - qhse
+  - hseq
+  - ehs
+  - she advisor
+  - she engineer
+  - she specialist
+  - environmental consultant
+  - environmental specialist
+  - environmental advisor
+  - environmental adviser
+  - environmental scientist
+  - environmental compliance
+  - permitting
+  - permit engineer
+  - environmental permit
+  - asset integrity
+  - integrity engineer
+  # circular economy, bio-based & waste
+  - recycling
+  - upcycling
+  - biobased
+  - bio-based
+  - biorefinery
+  - bioraffinage
+  - biogas
+  - biomethane
+  - groen gas
+  - vergisting
+  - anaerobic digestion
+  - fermentation
+  - fermentatie
+  - bioprocess
+  - bioprocessing
+  - bioproces
+  - downstream processing
+  - upstream processing
+  - waste-to-energy
+  - afvalverwerking
+  - waste management
+  - waste processing
+  - afvalbeheer
+  - sustainability specialist
+  - sustainability consultant
+  - sustainability advisor
+  - sustainability adviser
+  - duurzaamheid
+  - duurzaamheidsadviseur
+  - verduurzaming
+  - lca
+  - life cycle assessment
+  - carbon footprint
+  - decarbonisation
+  - decarbonization
+  # energy & carbon
+  - carbon capture
+  - ccs
+  - ccus
+  - co2
+  - co2-afvang
+  - carbon storage
+  - e-fuels
+  - efuels
+  - synthetic fuels
+  - power-to-x
+  - ptx
+  - ammonia
+  - ammoniak
+  - methanol
+  - battery
+  - batterij
+  - energy storage
+  - energieopslag
+  - utilities engineer
+  - utility engineer
+  - geothermal
+  - geothermie
+  - electrochemistry
+  - electrochemical
+  - elektrochemie
+  - catalysis
+  - catalyst engineer
+  - catalyst scientist
+  - catalyst development
+  - katalyse
+  - reactor engineer
+  - scale-up
+  - pilot plant
+  - proefinstallatie
+  - commissioning engineer
+  - start-up engineer
+  - corrosion engineer
+  - formulation
+  - formulation scientist
+  - application engineer
+  - technical service engineer
+  # water
+  - drinkwater
+  - drinking water
+  - rwzi
+  - zuivering
+  - zuiveringstechnoloog
+  - zuiveringsbeheer
+  - water quality
+  - waterkwaliteit
+  - slibverwerking
 # ...and NONE of these words.
 exclude_keywords:
   - senior
@@ -289,6 +439,156 @@ favourite_keywords:
   - circulair
   - circular economy
   - grondstoffen
+  # process safety, permits & regulators (added 2026-11-12 so omgevingsdienst / safety-consultancy titles match)
+  - brzo
+  - seveso
+  - omgevingsveiligheid
+  - externe veiligheid
+  - industriële veiligheid
+  - industriele veiligheid
+  - vergunningverlener milieu
+  - vergunningverlener industrie
+  - vergunningverlener brzo
+  - vergunningverlening milieu
+  - toezichthouder milieu
+  - toezichthouder brzo
+  - toezichthouder industrie
+  - toezichthouder milieu en veiligheid
+  - inspecteur milieu
+  - milieu-inspecteur
+  - milieuinspecteur
+  - inspecteur brzo
+  - inspecteur veiligheid
+  - inspecteur industrie
+  - adviseur milieu
+  - milieuadviseur
+  - adviseur omgevingsveiligheid
+  - adviseur externe veiligheid
+  - adviseur veiligheid
+  - veiligheidsadviseur
+  - veiligheidsingenieur
+  - milieutechnoloog
+  - milieutechniek
+  - milieuspecialist
+  - milieukunde
+  - risk engineer
+  - risk engineering
+  - risk assessment
+  - quantitative risk
+  - qra
+  - technical safety
+  - functional safety
+  - safety consultant
+  - safety specialist
+  - safety advisor
+  - safety adviser
+  - loss prevention
+  - hazop
+  - qhse
+  - hseq
+  - ehs
+  - she advisor
+  - she engineer
+  - she specialist
+  - environmental consultant
+  - environmental specialist
+  - environmental advisor
+  - environmental adviser
+  - environmental scientist
+  - environmental compliance
+  - permitting
+  - permit engineer
+  - environmental permit
+  - asset integrity
+  - integrity engineer
+  # circular economy, bio-based & waste
+  - recycling
+  - upcycling
+  - biobased
+  - bio-based
+  - biorefinery
+  - bioraffinage
+  - biogas
+  - biomethane
+  - groen gas
+  - vergisting
+  - anaerobic digestion
+  - fermentation
+  - fermentatie
+  - bioprocess
+  - bioprocessing
+  - bioproces
+  - downstream processing
+  - upstream processing
+  - waste-to-energy
+  - afvalverwerking
+  - waste management
+  - waste processing
+  - afvalbeheer
+  - sustainability specialist
+  - sustainability consultant
+  - sustainability advisor
+  - sustainability adviser
+  - duurzaamheid
+  - duurzaamheidsadviseur
+  - verduurzaming
+  - lca
+  - life cycle assessment
+  - carbon footprint
+  - decarbonisation
+  - decarbonization
+  # energy & carbon
+  - carbon capture
+  - ccs
+  - ccus
+  - co2
+  - co2-afvang
+  - carbon storage
+  - e-fuels
+  - efuels
+  - synthetic fuels
+  - power-to-x
+  - ptx
+  - ammonia
+  - ammoniak
+  - methanol
+  - battery
+  - batterij
+  - energy storage
+  - energieopslag
+  - utilities engineer
+  - utility engineer
+  - geothermal
+  - geothermie
+  - electrochemistry
+  - electrochemical
+  - elektrochemie
+  - catalysis
+  - catalyst engineer
+  - catalyst scientist
+  - catalyst development
+  - katalyse
+  - reactor engineer
+  - scale-up
+  - pilot plant
+  - proefinstallatie
+  - commissioning engineer
+  - start-up engineer
+  - corrosion engineer
+  - formulation
+  - formulation scientist
+  - application engineer
+  - technical service engineer
+  # water
+  - drinkwater
+  - drinking water
+  - rwzi
+  - zuivering
+  - zuiveringstechnoloog
+  - zuiveringsbeheer
+  - water quality
+  - waterkwaliteit
+  - slibverwerking
 
 # true  = ONLY alert on favourites (chemical / process engineering titles)
 # false = alert on everything that passes section 1, favourites starred and listed first
@@ -393,6 +693,13 @@ description_keywords:
   - welke technische richting
   - ongeacht je technische
   - any discipline
+  - environmental science
+  - environmental sciences
+  - milieuwetenschappen
+  - milieukunde
+  - safety science
+  - veiligheidskunde
+  - biobased
 # --------------------------------------------------------- 3. EXPERIENCE
 # For every new posting that passes the title check, jobwatch opens the job
 # description and looks for how many years of experience it asks for
