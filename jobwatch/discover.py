@@ -119,6 +119,9 @@ def _sitemap_urls(xml: str) -> tuple[list[str], list[str]]:
     return children, pages
 
 
+_SITEMAP_LANG_RE = re.compile(r"^([a-z]{2})(?:[-_][a-z]{2})?$")
+
+
 def sitemap_candidates(f: Fetcher, host_url: str) -> list[str]:
     parts = urlsplit(host_url)
     base = f"{parts.scheme}://{parts.netloc}"
@@ -133,7 +136,24 @@ def sitemap_candidates(f: Fetcher, host_url: str) -> list[str]:
     cands += [base + "/sitemap.xml", base + "/sitemap_index.xml"]
     # the site's own sitemaps first: robots.txt sometimes names another site's sitemap
     # (werkenbijsmurfitwestrock.nl points at werk.ah.nl), which would mix in that site's jobs
-    cands.sort(key=lambda c: urlsplit(c).netloc.lower() != parts.netloc.lower())
+    # then, on a site with one sitemap per language (robots.txt of jobs.thermofisher.com names
+    # /it/it/ first), the one under the careers page's own path ('/global/en/...'), and never
+    # a foreign-language one before an English or Dutch one: its job links are in that language
+    page_segs = [s for s in parts.path.lower().split("/") if s]
+
+    def rank(c: str) -> tuple:
+        cp = urlsplit(c)
+        segs = [s for s in cp.path.lower().split("/") if s][:-1]  # folders, not the file name
+        shared = 0
+        for a, b in zip(segs, page_segs):
+            if a != b:
+                break
+            shared += 1
+        lang = _SITEMAP_LANG_RE.match(segs[0]) if segs else None
+        foreign = bool(lang and lang.group(1) not in ("en", "nl"))
+        return (cp.netloc.lower() != parts.netloc.lower(), -shared, foreign)
+
+    cands.sort(key=rank)
     seen, out = set(), []
     for c in cands:
         if c not in seen:

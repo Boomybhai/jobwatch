@@ -1529,6 +1529,21 @@ def test_sitemap_candidates_try_own_host_before_foreign_robots_sitemap():
         "https://www.example.nl/job-sitemap.xml"
 
 
+def test_sitemap_candidates_prefer_careers_page_locale_over_foreign_language():
+    from jobwatch.discover import sitemap_candidates
+    robots = ("Sitemap: https://jobs.thermofisher.com/it/it/sitemap_index.xml\n"
+              "Sitemap: https://jobs.thermofisher.com/global/en/sitemap_index.xml\n"
+              "Sitemap: https://jobs.thermofisher.com/nl/nl/sitemap_index.xml\n")
+    cands = sitemap_candidates(FakeFetcher(html=robots), "https://jobs.thermofisher.com/global/en/netherlands")
+    assert cands[0] == "https://jobs.thermofisher.com/global/en/sitemap_index.xml"
+    assert cands.index("https://jobs.thermofisher.com/nl/nl/sitemap_index.xml") < \
+        cands.index("https://jobs.thermofisher.com/it/it/sitemap_index.xml")
+    # a site-root careers page: Dutch/English before Italian, root sitemaps unaffected
+    cands = sitemap_candidates(FakeFetcher(html=robots), "https://jobs.thermofisher.com/")
+    assert cands.index("https://jobs.thermofisher.com/nl/nl/sitemap_index.xml") < \
+        cands.index("https://jobs.thermofisher.com/it/it/sitemap_index.xml")
+
+
 
 
 def test_workday_location_facet_with_city_names():
