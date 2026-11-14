@@ -276,7 +276,7 @@ Farm Frites International B.V.,Low,Chemicals & process,https://www.farmfrites.co
 Galapagos B.V,Low,Chemicals & process,https://www.glpg.com/,yes,auto,auto,Homepage - jobwatch follows its careers link,
 GELITA Nederland B.V.,Low,Chemicals & process,https://www.gelita.com/en/career/open-positions,yes,auto,auto,Open positions page,
 Green Gas & Liquids Process Solutions B.V.,Low,"Engineering, consulting & inspection",https://greengasliquids.com/join-us/,yes,auto,auto,Join-us page,IND recognised sponsor; Perpetual Next competitor (biogas upgrading & CO2 capture skids)
-GSK Vaccines B.V.,Low,"Pharma, biotech & medtech",https://nl.gsk.com/nl-nl/carri%C3%A8re/vacatures-zoeken/,yes,auto,auto,Careers page (NL),
+GSK Vaccines B.V.,Low,"Pharma, biotech & medtech",https://gsk.wd5.myworkdayjobs.com/GSKCareers,yes,workday,auto,Workday job feed (reads Netherlands + Belgium jobs),"switched 2026-11-14 from nl.gsk.com to GSK's Workday feed so the big Belgian vaccine sites (Wavre, Rixensart) are covered"
 Gunvor Energy Rotterdam B.V.,Low,"Energy, fuels & gases",https://www.gunvorenergyrotterdam.nl/vacatures/,yes,auto,auto,Careers page,
 Halliburton B.V.,Low,Offshore & upstream,https://careers.halliburton.com/sitemap.xml,yes,auto,auto,Radancy job sitemap,
 Heerema Marine Contractors Nederland SE,Low,Offshore & upstream,https://careers.heerema.com/,yes,auto,auto,Careers page,
@@ -509,3 +509,8 @@ Jan De Nul Group,Low,"Water, waste & circular",https://jobs.jandenul.com/jobs,ye
 Kellanova (Belgium),Low,FMCG & food,https://jobs.kellanova.com/,yes,auto,auto,Careers page (global),"Belgium; found via Indeed BE search 2026-11-14 (Pringles process engineer, Mechelen)"
 AB InBev (Belgium),Low,FMCG & food,https://europecareers.ab-inbev.com/locations/belgium,yes,auto,auto,Europe careers - Belgium,"Belgium; found via Indeed BE search 2026-11-14 (utilities, Leuven)"
 Sweco Belgium,Medium,"Engineering, consulting & inspection",https://www.sweco.careers/belgium/,yes,auto,auto,Careers page (Belgium),Belgium; found via Indeed BE search 2026-11-14 (process engineering)
+Sanofi (Belgium),Medium,"Pharma, biotech & medtech",https://jobs.sanofi.com/en/belgium,yes,auto,auto,Careers page (Belgium),"added 2026-11-14 as a GSK competitor; Belgium (Geel biologics plant, Ghent, Diegem)"
+Amgen (Breda),Medium,"Pharma, biotech & medtech",https://careers.amgen.com/en/location/breda-jobs/87/2750405-2749990-2758401/4,yes,auto,auto,Careers page (Breda),"added 2026-11-14 as a GSK competitor; biologics manufacturing site, Breda"
+Takeda (Lessines),Medium,"Pharma, biotech & medtech",https://jobs.takeda.com/lessines,yes,auto,auto,Careers page (Lessines site),added 2026-11-14 as a GSK competitor; Belgium (plasma-derived therapies plant)
+Bristol Myers Squibb (Belgium),Medium,"Pharma, biotech & medtech",https://careers.bms.com/be/,yes,auto,auto,Careers page (Belgium),added 2026-11-14 as a GSK competitor; Belgium (Braine-l'Alleud)
+Novartis (Netherlands),Low,"Pharma, biotech & medtech",https://www.novartis.com/careers/career-search/tag/LOC_NL,yes,auto,auto,Career search (Netherlands filter),added 2026-11-14 as a GSK competitor; incl. Baarle-Nassau radioligand manufacturing site
