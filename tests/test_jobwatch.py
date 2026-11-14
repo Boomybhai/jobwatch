@@ -1673,3 +1673,23 @@ def test_implied_experience_is_ignored_for_junior_titles(settings):
     annotate_experience(f, senior)
     annotate_experience(f, junior)
     assert senior.years == 3 and junior.years is None
+
+
+def test_phd_project_links_count_as_jobs():
+    # Wetsus PhD site: each position is /<year>-<nr>-phd-project/ with no 'job' or 'vacancy' in the path
+    from jobwatch.adapters import parse_html_jobs
+    html = '<html><body>' \
+           '<a href="/2026-16-phd-project/">2026.16: Designing Next-Generation Water Treatment Trains</a>' \
+           '<a href="/how-to-apply-2/">How to apply</a></body></html>'
+    urls = [j.url for j in parse_html_jobs(html, "https://www.phdpositionswetsus.eu/available-research-position/", "Wetsus")]
+    assert urls == ["https://www.phdpositionswetsus.eu/2026-16-phd-project/"]
+
+
+def test_closed_postings_are_excluded():
+    from jobwatch.config import load_settings
+    from jobwatch.filters import title_ok
+    from jobwatch.models import Job
+    s = load_settings("config.yaml")
+    t = "2026.16: Designing Water Treatment Trains for PFAS Removal"
+    assert not title_ok(Job(company="Wetsus", title=t + " (Closed)", url="u", id="u"), s)
+    assert title_ok(Job(company="Wetsus", title=t, url="u", id="u"), s)

@@ -616,7 +616,7 @@ def fetch_sitemap(f: Fetcher, company: Company) -> list[Job]:
 
 # -------------------------------------------------------------- plain HTML
 JOBLINK_RE = re.compile(
-    r"(job|jobs|vacat|vacanc|position|opening|requisition|stelle|/o/|/vacature|careers?[^/]*/[^/?]+/?(?:\?|$)|werken-bij[^/]*/[^/?]+/?(?:\?|$)|join-?us/[^/?]+/?(?:\?|$))",
+    r"(job|jobs|vacat|vacanc|position|opening|requisition|stelle|phd-project|/o/|/vacature|careers?[^/]*/[^/?]+/?(?:\?|$)|werken-bij[^/]*/[^/?]+/?(?:\?|$)|join-?us/[^/?]+/?(?:\?|$))",
     re.I,
 )
 NAV_WORDS = {

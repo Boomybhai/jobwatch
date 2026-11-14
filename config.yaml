@@ -447,6 +447,9 @@ exclude_keywords:
   - meewerkstage
   - bijbaan
   - vakantiewerk
+  # postings a site still lists but marks as closed (e.g. Wetsus PhD projects), added 2026-11-14
+  - (closed)
+  - (gesloten)
 
 # ---------------------------------------------------------- LANGUAGE
 # true = drop jobs whose description clearly demands fluent / native Dutch
