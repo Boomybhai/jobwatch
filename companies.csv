@@ -105,8 +105,8 @@ CarbExplore Research B.V.,Medium,Startups & scale-ups,https://carbexplore.com/ca
 CarbonX B.V.,Medium,Startups & scale-ups,https://jobs.ashbyhq.com/carbonx,yes,auto,auto,Ashby job board,careers URL found by web search 2026-11-03
 Chevron Oronite Technology B.V.,Medium,Chemicals & process,https://careers.chevron.com/sitemap.xml,yes,auto,auto,Radancy job sitemap,
 Coca-Cola Europacific Partners Nederland B.V.,Medium,FMCG & food,https://www.ccep.jobs/nl/ccep-nl,yes,auto,auto,Careers page (NL),
-"Colsen, Adviesburo voor Milieutechniek B.V.",Medium,"Water, waste & circular",https://www.colsen.nl/,yes,auto,auto,Website,
-Cool Separations B.V.,Medium,"Water, waste & circular",https://www.coolseparations.nl/,yes,auto,auto,Website,
+"Colsen, Adviesburo voor Milieutechniek B.V.",Medium,"Water, waste & circular",https://www.colsen.nl/werken-bij-colsen,yes,auto,auto,Careers page,careers URL found by web search 2026-11-14 (homepage was read before)
+Cool Separations B.V.,Medium,"Water, waste & circular",https://www.coolseparations.nl/,no,auto,auto,Website,disabled 2026-11-14: no careers page on the site (only the homepage was read) - check by hand
 Danone Global Research & Innovation Center B.V.,Medium,FMCG & food,https://careers.danone.com/en-global/,yes,auto,auto,Careers page (global — filter Utrecht),
 DFE Pharma B.V.,Medium,"Pharma, biotech & medtech",https://mycareers.dfepharma.com/?employer=DFE,yes,successfactors,auto,SuccessFactors job feed (shared with FrieslandCampina),
 DS Smith Packaging Nederland Locatie Eerbeek,Medium,Paper & packaging,https://www.sdworx.jobs/nl-nl/werken-bij/ds-smith,yes,auto,auto,Careers page (NL),
@@ -131,7 +131,7 @@ HALIX B.V.,Medium,"Pharma, biotech & medtech",https://www.halix.nl/careers/,yes,
 Haskoning Nederland B.V.,Medium,"Water, waste & circular",https://www.royalhaskoningdhv.com/en/careers,yes,auto,auto,Careers page,
 Hatch B.V.,Medium,"Engineering, consulting & inspection",https://jobs.hatch.com/,yes,successfactors,auto,SuccessFactors job feed,
 Havenbedrijf Rotterdam N.V.,Medium,"Energy, fuels & gases",https://www.portofrotterdam.com/nl,yes,auto,auto,Homepage - jobwatch follows its werken-bij link,
-HeatMatrix Group B.V.,Medium,Startups & scale-ups,https://www.heatmatrix.nl/,yes,auto,auto,Website (no careers page found),careers URL found by web search 2026-11-03
+HeatMatrix Group B.V.,Medium,Startups & scale-ups,https://www.heatmatrix.nl/werken-bij/,yes,auto,auto,Careers page,careers URL found by web search 2026-11-14 (homepage was read before)
 Heidelberg Benelux B.V.,Medium,"Metals, minerals & building materials",https://heidelbergmaterialsbenelux.recruitee.com/,yes,auto,auto,Careers page,
 Hexion VAD B.V.,Medium,"Coatings, materials & composites",https://careers.hexion.com/go/OperationsNL/9190200/,yes,auto,auto,Careers page (NL),
 HoSt Biogas B.V.,Medium,"Energy, fuels & gases",https://careersathost.com/l/en,yes,auto,auto,Careers page (careersathost.com),
@@ -184,7 +184,7 @@ Pharmachemie B.V.,Medium,"Pharma, biotech & medtech",https://www.careers.teva/ca
 Philips Consumer Lifestyle B.V.,Medium,High-tech & semiconductors,https://www.careers.philips.com/nl/en/manufacturing-nl,yes,auto,auto,Careers page (NL manufacturing),
 Polpharma Biologics Group B.V.,Medium,"Pharma, biotech & medtech",https://polpharmabiologics.com/careers,yes,auto,auto,Careers page,
 PPG Coatings Nederland B.V.,Medium,"Coatings, materials & composites",https://careers.ppg.com/us/en/,yes,auto,auto,Careers page (global — filter Netherlands),careers URL found by web search 2026-11-03
-Process Design Center B.V.,Medium,"Engineering, consulting & inspection",https://www.process-design-center.com/contact,yes,auto,auto,Contact page (no careers page found — send open application),
+Process Design Center B.V.,Medium,"Engineering, consulting & inspection",https://www.process-design-center.com/contact,no,auto,auto,Contact page (no careers page found — send open application),disabled 2026-11-14: no careers page - its Join us page points to LinkedIn for open positions - check by hand
 Prothya Biosolutions Netherlands B.V.,Medium,Chemicals & process,https://www.prothya.com/careers,yes,auto,auto,Careers page,
 Purac Biochem B.V.,Medium,Chemicals & process,https://jobs.corbion.com,yes,successfactors,auto,"SuccessFactors job feed (Corbion, global — filter Netherlands)",
 Remat Chemie B.V.,Medium,Chemicals & process,https://www.rematchemie.nl/vacatures/,yes,auto,auto,Careers page (NL),careers URL found by web search 2026-11-03
@@ -304,7 +304,7 @@ Maan BioBased Products B.V.,Low,Startups & scale-ups,https://maan-biobasedproduc
 Malvern Panalytical B.V.,Low,High-tech & semiconductors,https://spectris.wd3.myworkdayjobs.com/Malvern_Panalytical_Careers,yes,auto,auto,Workday careers site,careers URL found by web search 2026-11-03
 Medtronic B.V.,Low,"Pharma, biotech & medtech",https://www.medtronic.com/en-ie/our-company/careers.html,yes,auto,auto,Careers page (global — filter Netherlands),careers URL found by web search 2026-11-03
 Mondelez Nederland B.V.,Low,FMCG & food,https://mdlz.wd3.myworkdayjobs.com/External,yes,auto,auto,Careers page (Benelux),
-Morphotonics B.V.,Low,Chemicals & process,https://www.morphotonics.com/,yes,auto,auto,Website,
+Morphotonics B.V.,Low,Chemicals & process,https://morphotonics.com/careers/,yes,auto,auto,Careers page,careers URL found by web search 2026-11-14 (homepage was read before)
 Morssinkhof Plastics Zeewolde B.V.,Low,Chemicals & process,https://werkenbij.morssinkhof-rymoplast.com/vacatures/,yes,auto,auto,"Careers page (NL, Morssinkhof-Rymoplast)",DEAD LINK Oct 2026 (morssinkhofgroup.com no longer exists) - needs a new careers URL
 N.V. Afvalzorg Holding,Low,"Water, waste & circular",https://www.afvalzorg.nl/over-afvalzorg/werken-bij/,yes,auto,auto,Careers page,
 N.V. Elektriciteits Produktiemaatschappij Zuid-Nederland EPZ,Low,"Energy, fuels & gases",https://www.epz.nl/,yes,auto,auto,Website,
@@ -315,7 +315,7 @@ Nutreco Nederland B.V.,Low,Chemicals & process,https://www.nutreco.com/en/career
 O-I Netherlands B.V.,Low,Chemicals & process,https://careers.smartrecruiters.com/O-I,yes,auto,auto,SmartRecruiters job board,
 Oceans of Energy B.V.,Low,Startups & scale-ups,https://oceansofenergy.recruitee.com/,yes,auto,auto,Careers page,
 Pact Engineering Environmental Solution B.V.,Low,"Engineering, consulting & inspection",,no,auto,auto,No careers page found,no careers page found — add a URL to enable
-Paqell B.V.,Low,Chemicals & process,https://www.paqell.com/,yes,auto,auto,Website,
+Paqell B.V.,Low,Chemicals & process,https://www.paqell.com/careers/,yes,auto,auto,Careers page,careers URL found by web search 2026-11-14 (homepage was read before)
 Perfetti Van Melle Services B.V.,Low,Chemicals & process,https://www.perfettivanmelle.com/careers,yes,auto,auto,Careers page,
 Petrogas E&P Netherlands B.V.,Low,Offshore & upstream,https://careers.smartrecruiters.com/PetrogasEP,yes,auto,auto,Careers page (group — filter Netherlands),
 Pfizer B.V.,Low,"Pharma, biotech & medtech",https://pfizer.wd1.myworkdayjobs.com/PfizerCareers,yes,workday,auto,Workday job feed (global — filter Netherlands),
@@ -340,7 +340,7 @@ Spiral Hydrogen,Low,"Energy, fuels & gases",https://www.spiralhydrogen.com/caree
 SPX Flow Technology Assen B.V.,Low,Process equipment & instrumentation,https://www.spxflow.com/about/careers/,no,auto,auto,Careers page (global — filter Netherlands),careers URL found by web search 2026-11-03; disabled 2026-11-09: jobs are on career8.successfactors.com whose robots.txt disallows everything - check by hand
 Stichting Deltares,Low,"Water, waste & circular",https://careers.deltares.nl/nl/vacatures,yes,auto,auto,Vacancies page (careers.deltares.nl),
 Stichting Thermoplastic Composites Research Center,Low,"Coatings, materials & composites",https://www.tprc.nl/,yes,auto,auto,Website,
-Synova Renewable Technology B.V.,Low,"Water, waste & circular",https://www.synovapower.com/,yes,auto,auto,Website,
+Synova Renewable Technology B.V.,Low,"Water, waste & circular",https://synovatech.com/vacancies/,yes,auto,auto,Careers page,careers URL found by web search 2026-11-14 (site moved to synovatech.com; homepage was read before)
 Tanatex Chemicals B.V.,Low,Chemicals & process,https://www.tanatexchemicals.com/,yes,auto,auto,Website,
 Tetra Pak Cheese and Powder Systems B.V.,Low,FMCG & food,https://www.tetrapak.com/careers,yes,auto,auto,Careers page (filter: Netherlands),
 Thermo Fisher Scientific B.V.,Low,"Pharma, biotech & medtech",https://jobs.thermofisher.com/global/en/netherlands,yes,auto,auto,Careers page (Thermo Fisher NL),
@@ -380,10 +380,10 @@ Olympia Nederland B.V.,Low,Recruitment agency,https://www.olympia.nl/vacatures,y
 PureBlue Water B.V.,High,"Water, waste & circular",https://pureblue.nl/en/working-at-pureblue,yes,auto,auto,Careers page,"IND recognised sponsor; decentralised wastewater treatment, Kapellebrug"
 HydroThane STP B.V.,Medium,"Water, waste & circular",https://www.hydrothane-stp.com/job-opportunities,yes,auto,auto,Careers page,IND recognised sponsor; PureBlue Water competitor (anaerobic industrial wastewater)
 Econvert Water & Energy B.V.,Medium,"Water, waste & circular",https://eu.jobs.saur.com/pages/nsi-econvert,yes,auto,auto,Careers page,"IND recognised sponsor; PureBlue Water competitor (anaerobic wastewater & biogas, Heerenveen)"
-VAM WaterTech,Medium,"Water, waste & circular",https://www.vam-watertech.com/,yes,auto,auto,Website,"IND recognised sponsor; PureBlue Water competitor (agrifood water reuse, Borssele)"
+VAM WaterTech,Medium,"Water, waste & circular",https://www.vam-watertech.com/jobs/,yes,auto,auto,Careers page,"careers URL found by web search 2026-11-14; IND recognised sponsor; PureBlue Water competitor (agrifood water reuse, Borssele)"
 Van Remmen UV Techniek B.V.,Medium,"Water, waste & circular",https://vanremmen.nl/,yes,auto,auto,Website,"IND recognised sponsor; PureBlue Water competitor (UV-C/AOP disinfection, Wijhe)"
 Hatenboer Neptunus Holding B.V.,Medium,"Water, waste & circular",https://www.hatenboer-water.com/,yes,auto,auto,Website,"IND recognised sponsor; PureBlue Water competitor (Hatenboer-Water, maritime & industrial water treatment, Schiedam)"
-Aquacare Europe B.V.,Medium,"Water, waste & circular",https://aquacare.nl/,yes,auto,auto,Website,IND recognised sponsor; PureBlue Water competitor (industrial & municipal water treatment)
+Aquacare Europe B.V.,Medium,"Water, waste & circular",https://aquacare.nl/vacatures/,yes,auto,auto,Careers page,careers URL found by web search 2026-11-14; IND recognised sponsor; PureBlue Water competitor (industrial & municipal water treatment)
 BWT B.V.,Low,"Water, waste & circular",https://www.bwt.com/nl-nl/,yes,auto,auto,Website,IND recognised sponsor; PureBlue Water competitor (water treatment; bwt.nl has TLS issues)
 The Seaweed Company B.V.,Medium,Food ingredients & agri-processing,https://join.com/companies/theseaweedcompany,yes,auto,auto,JOIN job board,IND recognised sponsor; Kelp Blue competitor (seaweed cultivation & processing)
 Hortimare B.V.,Medium,Food ingredients & agri-processing,https://hortimare.com/,no,auto,auto,Website,"IND recognised sponsor; Kelp Blue competitor (seaweed breeding & seedlings); disabled 2026-11-11: no careers page, only the homepage was read"
@@ -396,7 +396,7 @@ BTG BioLiquids B.V.,High,"Energy, fuels & gases",https://www.btg-bioliquids.com/
 ATTERO B.V.,Medium,"Water, waste & circular",https://www.attero.nl/nl/werken-bij/vacatures/,yes,auto,auto,Careers page (NL),IND recognised sponsor; Perpetual Next competitor (green gas from organic waste)
 AEB Exploitatie B.V.,Medium,"Water, waste & circular",https://werkenbij.aebamsterdam.nl/vacatures/,yes,auto,auto,Careers page (NL),"IND recognised sponsor; Perpetual Next competitor (waste-to-energy & bio-energy plant, Amsterdam)"
 SusPhos B.V.,Medium,"Water, waste & circular",https://www.susphos.com/join/,yes,auto,auto,Careers page,"IND recognised sponsor; Perpetual Next competitor per CB Insights (phosphate from waste, Leeuwarden)"
-Bio Energy Netherlands B.V.,Medium,"Energy, fuels & gases",https://bioenergynetherlands.nl/en/,yes,auto,auto,Website,IND recognised sponsor; Perpetual Next competitor (waste-wood gasification to syngas/green molecules)
+Bio Energy Netherlands B.V.,Medium,"Energy, fuels & gases",https://bioenergynetherlands.nl/en/,no,auto,auto,Website,disabled 2026-11-14: no careers page on the site (only the homepage was read) - check by hand; IND recognised sponsor; Perpetual Next competitor (waste-wood gasification to syngas/green molecules)
 Biogas Plus Systems B.V.,Low,"Energy, fuels & gases",,no,auto,auto,Not found — no careers page confirmed; follow on LinkedIn,IND recognised sponsor; Perpetual Next competitor (biogas plants); no careers page found — add a URL to enable
 Pielkenrood Management B.V.,High,"Water, waste & circular",https://www.pielkenrood.net/join-the-team/,yes,auto,auto,Careers page (NL),IND recognised sponsor; oil/water separation & industrial wastewater treatment (Heerhugowaard; part of Dutch Clean Tech)
 OWT Oil-Water Treatment Services B.V.,Low,"Water, waste & circular",,no,auto,auto,LinkedIn company page — no careers page found,IND recognised sponsor; Pielkenrood competitor (oil/water treatment); no careers page found — add a URL to enable
