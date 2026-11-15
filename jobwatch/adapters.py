@@ -608,9 +608,25 @@ def dedupe_translations(urls: list[str]) -> list[str]:
     return [u for u in urls if not _slug_id(u) or u in keep]
 
 
+_DETAIL_SEG_RE = re.compile(r"^(?:job|jobs|vacancy|vacature|position|offre)[-_]?details?$", re.I)
+
+
+def prefer_detail_pages(urls: list[str], min_detail: int = 3) -> list[str]:
+    """Keep only the /job-detail/ pages when a sitemap has them.
+
+    Agency sitemaps (Michael Page: /job-detail/<title>/ref/jn-...) also list search
+    pages per category and region (/jobs/procurement-supply-chain/netherlands) that look
+    like job slugs. When enough explicit detail pages exist, the others are listings.
+    """
+    def is_detail(u: str) -> bool:
+        return any(_DETAIL_SEG_RE.match(seg) for seg in urlsplit(u).path.split("/") if seg)
+    detail = [u for u in urls if is_detail(u)]
+    return detail if len(detail) >= min_detail else urls
+
+
 def fetch_sitemap(f: Fetcher, company: Company) -> list[Job]:
     from .discover import collect_sitemap_jobs  # avoid import cycle
-    urls = dedupe_translations(collect_sitemap_jobs(f, company.url, strict=True))[:5000]
+    urls = dedupe_translations(prefer_detail_pages(collect_sitemap_jobs(f, company.url, strict=True)))[:5000]
     return [Job(company=company.name, title=title_from_url(u), url=u, id=u) for u in urls]
 
 

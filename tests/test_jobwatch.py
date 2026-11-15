@@ -1693,3 +1693,17 @@ def test_closed_postings_are_excluded():
     t = "2026.16: Designing Water Treatment Trains for PFAS Removal"
     assert not title_ok(Job(company="Wetsus", title=t + " (Closed)", url="u", id="u"), s)
     assert title_ok(Job(company="Wetsus", title=t, url="u", id="u"), s)
+
+
+def test_prefer_detail_pages_drops_agency_category_pages():
+    from jobwatch.adapters import prefer_detail_pages
+    base = "https://www.michaelpage.nl"
+    jobs = [base + f"/job-detail/process-engineer-{i}/ref/jn-112026-68{i}" for i in range(3)]
+    listings = [base + "/jobs/procurement-supply-chain/netherlands",
+                base + "/jobs/procurement-supply-chain/sector-procurement-supply-chain"]
+    assert prefer_detail_pages(listings + jobs) == jobs
+    # too few detail pages: nothing is dropped
+    assert prefer_detail_pages(listings + jobs[:1]) == listings + jobs[:1]
+    # sites without detail pages are untouched
+    plain = ["https://example.nl/vacatures/process-engineer-rotterdam", "https://example.nl/vacatures/123"]
+    assert prefer_detail_pages(plain) == plain
