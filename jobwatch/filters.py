@@ -129,6 +129,26 @@ def _code_verdict(location: str) -> str:
     return "unknown"
 
 
+_LOC_SPLIT_RE = re.compile(r"\s*(?:;|\||\n|\s/\s)\s*")
+_COUNTRY_WORD_RE = re.compile(r"netherlands|belgi", re.I)
+
+
+def _without_us_places(location: str) -> tuple[str, bool]:
+    """Drop the 'City, ST' parts of a location that are US places (US state code after a comma).
+
+    US towns share names with Dutch places ("Nederland, TX", "Holland, MI", "Amsterdam, NY"),
+    so the place word alone must not keep them. Returns (what's left, whether anything was dropped).
+    """
+    kept, dropped = [], False
+    for part in _LOC_SPLIT_RE.split(location or ""):
+        codes = set(US_STATE_RE.findall(part))
+        if codes and codes <= (US_STATES - NL_CODES) and not _COUNTRY_WORD_RE.search(part):
+            dropped = True
+        elif part.strip():
+            kept.append(part)
+    return "; ".join(kept), dropped
+
+
 def location_verdict(job: Job, settings: Settings, use_page: bool = False) -> str:
     """'keep' (in a wanted country), 'drop' (elsewhere) or 'unknown'.
 
@@ -139,7 +159,10 @@ def location_verdict(job: Job, settings: Settings, use_page: bool = False) -> st
     if not (settings.location_keywords or settings.foreign_location_keywords):
         return "keep"  # location filter switched off
     # 1. the location field
-    v = _place_verdict(job.location, settings)
+    rest, us_place = _without_us_places(job.location)
+    if us_place and not rest:
+        return "drop"  # only US places ("Nederland, TX - ASU")
+    v = _place_verdict(rest if us_place else job.location, settings)
     if v != "unknown":
         return v
     if job.location:

@@ -1735,3 +1735,20 @@ def test_prefer_detail_pages_drops_agency_category_pages():
     # sites without detail pages are untouched
     plain = ["https://example.nl/vacatures/process-engineer-rotterdam", "https://example.nl/vacatures/123"]
     assert prefer_detail_pages(plain) == plain
+
+
+@pytest.mark.parametrize("loc,expected", [
+    ("Nederland, TX - ASU", False),          # Air Liquide's Texas plant, not the Netherlands
+    ("Holland, MI", False),
+    ("Amsterdam, NY; Houston, TX", False),
+    ("Rotterdam; Houston, TX", True),        # a wanted place next to a US one still wins
+    ("Bergen op Zoom, NB", True),            # Dutch province code, not a US state
+])
+def test_us_towns_named_like_dutch_places_are_not_kept(loc, expected):
+    from jobwatch.filters import location_verdict
+    s = Settings(location_keywords=["nederland", "netherlands", "holland", "amsterdam", "rotterdam",
+                                    "bergen op zoom"],
+                 foreign_location_keywords=["houston"])
+    job = Job(company="Air Liquide B.V.", title="Plant Engineer", url="https://x.wd3.myworkdayjobs.com/s/job/a",
+              location=loc)
+    assert (location_verdict(job, s) == "keep") is expected
