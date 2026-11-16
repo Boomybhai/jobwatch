@@ -26,7 +26,7 @@ MULTI_LOC_RE = re.compile(r"^\d+\s+locations?$", re.I)
 # --------------------------------------------------------------- detection
 def detect_adapter(url: str) -> str:
     host = urlsplit(url).netloc.lower()
-    if "myworkdayjobs.com" in host:
+    if "myworkdayjobs.com" in host or host.endswith(".myworkdaysite.com"):
         return "workday"
     if "greenhouse.io" in host:
         return "greenhouse"
@@ -58,6 +58,11 @@ def workday_endpoint(url: str) -> tuple[str, str, str]:
     host = parts.netloc
     tenant = host.split(".")[0]
     segs = [s for s in parts.path.split("/") if s and not LOCALE_RE.match(s)]
+    if host.lower().endswith(".myworkdaysite.com") and len(segs) >= 3 and segs[0] == "recruiting":
+        # https://wd1.myworkdaysite.com/recruiting/<tenant>/<site> (AB InBev's job links)
+        tenant, site = segs[1], segs[2]
+        return (f"https://{host}/wday/cxs/{tenant}/{site}/jobs",
+                f"https://{host}/recruiting/{tenant}/{site}", site)
     if not segs:
         raise ValueError(f"can't find Workday site name in {url}")
     site = segs[0]

@@ -24,6 +24,10 @@ RETRY_STATUSES = (403, 406)
 # Workday & co. sometimes answer a burst of requests with a 5xx or an HTML error page
 # (JSONDecodeError); one calm retry a few seconds later usually gets the real answer.
 TRANSIENT_RETRY_SECONDS = 5.0
+# A burst of Workday tenants from one runner gets "429 Too Many Requests" (60 sites in one
+# run). Wait as long as the server asks (Retry-After), within limits, and try once more.
+THROTTLE_RETRY_SECONDS = 20.0
+THROTTLE_MAX_SECONDS = 60.0
 
 
 class Fetcher:
@@ -95,6 +99,11 @@ class Fetcher:
             self._wait()
             resp = self.session.post(url, json=payload, timeout=self.settings.timeout_seconds,
                                      headers={**headers, "User-Agent": BROWSER_UA})
+        if resp.status_code == 429:
+            _throttle_pause(resp, url)
+            self._wait()
+            resp = self.session.post(url, json=payload, timeout=self.settings.timeout_seconds,
+                                     headers=headers)
         if _transient(resp):
             time.sleep(TRANSIENT_RETRY_SECONDS)
             self._wait()
@@ -112,6 +121,11 @@ class Fetcher:
             self._wait()
             resp = self.session.get(url, timeout=self.settings.timeout_seconds,
                                     headers={"Accept": "application/json", "User-Agent": BROWSER_UA}, **kw)
+        if resp.status_code == 429:
+            _throttle_pause(resp, url)
+            self._wait()
+            resp = self.session.get(url, timeout=self.settings.timeout_seconds,
+                                    headers={"Accept": "application/json"}, **kw)
         if _transient(resp):
             time.sleep(TRANSIENT_RETRY_SECONDS)
             self._wait()
@@ -177,6 +191,18 @@ def _raise_with_body(resp: requests.Response) -> None:
         if not body:
             raise
         raise requests.HTTPError(f"{exc} - server said: {body}", response=resp) from exc
+
+
+def _throttle_pause(resp: requests.Response, url: str) -> None:
+    """Sleep after a 429: the server's Retry-After (seconds) if it gives one, else a default."""
+    wait = THROTTLE_RETRY_SECONDS
+    try:
+        wait = float(resp.headers.get("Retry-After", wait))
+    except (TypeError, ValueError):
+        pass  # an HTTP date or junk -> the default
+    wait = max(0.0, min(wait, THROTTLE_MAX_SECONDS))
+    log.info("429 from %s - waiting %.0fs before one retry", urlsplit(url).netloc, wait)
+    time.sleep(wait)
 
 
 def _transient(resp: requests.Response) -> bool:

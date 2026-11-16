@@ -58,6 +58,15 @@ def test_workday_endpoint_skips_locale():
     assert site == "IFF_Careers"
 
 
+def test_workday_endpoint_reads_myworkdaysite_links():
+    url = "https://wd1.myworkdaysite.com/en-US/recruiting/abinbev/EUR"
+    assert detect_adapter(url) == "workday"
+    api, public, site = workday_endpoint(url)
+    assert api == "https://wd1.myworkdaysite.com/wday/cxs/abinbev/EUR/jobs"
+    assert public == "https://wd1.myworkdaysite.com/recruiting/abinbev/EUR"
+    assert site == "EUR"
+
+
 # -------------------------------------------------------------------- HTML
 HTML = """
 <html><body>
@@ -1462,6 +1471,25 @@ def test_json_api_gives_up_after_one_retry(monkeypatch):
     with pytest.raises(rq.HTTPError):
         f.post_json("https://x.wd3.myworkdayjobs.com/wday/cxs/x/s/jobs", {})
     assert len(calls) == 2
+
+
+def test_json_api_waits_and_retries_once_after_429(monkeypatch):
+    import requests as rq
+    from jobwatch import fetch as fetch_mod
+    slept = []
+    monkeypatch.setattr(fetch_mod.time, "sleep", slept.append)
+    f = fetch_mod.Fetcher(Settings(request_delay_seconds=0))
+    busy = _resp(429, "Too Many Requests")
+    busy.headers["Retry-After"] = "600"  # capped
+    answers = [busy, _resp(200, '{"total": 3}')]
+    monkeypatch.setattr(f.session, "post", lambda *a, **k: answers.pop(0))
+    assert f.post_json("https://x.wd3.myworkdayjobs.com/wday/cxs/x/s/jobs", {}) == {"total": 3}
+    assert slept == [fetch_mod.THROTTLE_MAX_SECONDS]
+    calls = []
+    monkeypatch.setattr(f.session, "post", lambda *a, **k: calls.append(1) or _resp(429, "slow down"))
+    with pytest.raises(rq.HTTPError):
+        f.post_json("https://x.wd3.myworkdayjobs.com/wday/cxs/x/s/jobs", {})
+    assert len(calls) == 2 and slept[-1] == fetch_mod.THROTTLE_RETRY_SECONDS
 
 
 def test_plain_get_retries_once_after_server_error(monkeypatch):
