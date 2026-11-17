@@ -28,6 +28,11 @@ TRANSIENT_RETRY_SECONDS = 5.0
 # run). Wait as long as the server asks (Retry-After), within limits, and try once more.
 THROTTLE_RETRY_SECONDS = 20.0
 THROTTLE_MAX_SECONDS = 60.0
+# Since mid-Nov 2026 Workday answers most requests from GitHub's runners with a 429 page for
+# the whole run, so the wait rarely helps. After this many 429s that persist through the wait
+# on one site family (e.g. *.myworkdayjobs.com), stop waiting and retrying there for the rest
+# of the run: one plain attempt per company - fewer requests to a busy server, ~20 min saved.
+THROTTLE_GIVE_UP_AFTER = 3
 
 
 class Fetcher:
@@ -45,6 +50,7 @@ class Fetcher:
         self.allow_render = allow_render
         self._pw = None
         self._browser = None
+        self._throttled: dict[str, int] = {}  # site family -> 429s that outlasted the wait
 
     # ---------------------------------------------------------------- helpers
     def _wait(self) -> None:
@@ -99,11 +105,12 @@ class Fetcher:
             self._wait()
             resp = self.session.post(url, json=payload, timeout=self.settings.timeout_seconds,
                                      headers={**headers, "User-Agent": BROWSER_UA})
-        if resp.status_code == 429:
+        if resp.status_code == 429 and self._may_retry_429(url):
             _throttle_pause(resp, url)
             self._wait()
             resp = self.session.post(url, json=payload, timeout=self.settings.timeout_seconds,
                                      headers=headers)
+            self._note_429(url, resp)
         if _transient(resp):
             time.sleep(TRANSIENT_RETRY_SECONDS)
             self._wait()
@@ -121,11 +128,12 @@ class Fetcher:
             self._wait()
             resp = self.session.get(url, timeout=self.settings.timeout_seconds,
                                     headers={"Accept": "application/json", "User-Agent": BROWSER_UA}, **kw)
-        if resp.status_code == 429:
+        if resp.status_code == 429 and self._may_retry_429(url):
             _throttle_pause(resp, url)
             self._wait()
             resp = self.session.get(url, timeout=self.settings.timeout_seconds,
                                     headers={"Accept": "application/json"}, **kw)
+            self._note_429(url, resp)
         if _transient(resp):
             time.sleep(TRANSIENT_RETRY_SECONDS)
             self._wait()
@@ -133,6 +141,17 @@ class Fetcher:
                                     headers={"Accept": "application/json"}, **kw)
         _raise_with_body(resp)
         return resp.json()
+
+    def _may_retry_429(self, url: str) -> bool:
+        return self._throttled.get(_site_family(url), 0) < THROTTLE_GIVE_UP_AFTER
+
+    def _note_429(self, url: str, resp: requests.Response) -> None:
+        if resp.status_code != 429:
+            return
+        fam = _site_family(url)
+        self._throttled[fam] = self._throttled.get(fam, 0) + 1
+        if self._throttled[fam] == THROTTLE_GIVE_UP_AFTER:
+            log.info("%s keeps answering 429 even after waiting - no more waits/retries there this run", fam)
 
     def render(self, url: str) -> str:
         """Return the HTML after JavaScript has run (needs Playwright)."""
@@ -191,6 +210,12 @@ def _raise_with_body(resp: requests.Response) -> None:
         if not body:
             raise
         raise requests.HTTPError(f"{exc} - server said: {body}", response=resp) from exc
+
+
+def _site_family(url: str) -> str:
+    """'airliquidehr.wd3.myworkdayjobs.com' -> 'myworkdayjobs.com' (one throttle for all tenants)."""
+    host = urlsplit(url).netloc.split(":")[0].lower()
+    return ".".join(host.split(".")[-2:])
 
 
 def _throttle_pause(resp: requests.Response, url: str) -> None:

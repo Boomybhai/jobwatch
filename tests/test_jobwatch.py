@@ -1492,6 +1492,25 @@ def test_json_api_waits_and_retries_once_after_429(monkeypatch):
     assert len(calls) == 2 and slept[-1] == fetch_mod.THROTTLE_RETRY_SECONDS
 
 
+def test_stops_waiting_on_429_once_a_site_family_keeps_throttling(monkeypatch):
+    import requests as rq
+    from jobwatch import fetch as fetch_mod
+    slept = []
+    monkeypatch.setattr(fetch_mod.time, "sleep", slept.append)
+    f = fetch_mod.Fetcher(Settings(request_delay_seconds=0))
+    calls = []
+    monkeypatch.setattr(f.session, "post", lambda *a, **k: calls.append(1) or _resp(429, "slow down"))
+    n = fetch_mod.THROTTLE_GIVE_UP_AFTER
+    for i in range(n + 2):  # different tenants, same Workday family
+        with pytest.raises(rq.HTTPError):
+            f.post_json(f"https://t{i}.wd{i}.myworkdayjobs.com/wday/cxs/t/s/jobs", {})
+    assert len(slept) == n and len(calls) == 2 * n + 2  # later tenants: one attempt, no wait
+    answers = [_resp(429, "busy"), _resp(200, '{"ok": true}')]  # other sites still get the retry
+    monkeypatch.setattr(f.session, "get", lambda *a, **k: answers.pop(0))
+    assert f.get_json("https://api.smartrecruiters.com/v1/companies/x/postings") == {"ok": True}
+    assert len(slept) == n + 1
+
+
 def test_plain_get_retries_once_after_server_error(monkeypatch):
     from jobwatch import fetch as fetch_mod
     monkeypatch.setattr(fetch_mod, "TRANSIENT_RETRY_SECONDS", 0)
