@@ -1771,3 +1771,48 @@ def test_us_towns_named_like_dutch_places_are_not_kept(loc, expected):
     job = Job(company="Air Liquide B.V.", title="Plant Engineer", url="https://x.wd3.myworkdayjobs.com/s/job/a",
               location=loc)
     assert (location_verdict(job, s) == "keep") is expected
+
+
+# ------------------------------------------------------------------ Workday once a day
+def test_state_due_waits_between_reads(tmp_path):
+    from datetime import datetime, timedelta, timezone
+    st = State(tmp_path / "s.json")
+    t0 = datetime(2026, 11, 18, 10, 0, tzinfo=timezone.utc)
+    assert st.due("Shell", "workday_last_try", 21, now=t0)          # never tried -> due
+    assert not st.due("Shell", "workday_last_try", 21, now=t0 + timedelta(hours=3))
+    assert not st.due("Shell", "workday_last_try", 21, now=t0 + timedelta(hours=20))
+    assert st.due("Shell", "workday_last_try", 21, now=t0 + timedelta(hours=21))
+    assert st.due("Dow", "workday_last_try", 21, now=t0 + timedelta(hours=1))  # per company
+    assert st.due("Shell", "workday_last_try", 0, now=t0)            # 0 = every run
+    st.save()
+    assert not State(tmp_path / "s.json").due("Shell", "workday_last_try", 21, now=t0 + timedelta(hours=22))
+
+
+def test_shipped_config_reads_workday_daily():
+    assert 0 < load_settings(ROOT / "config.yaml").workday_every_hours <= 24
+
+
+def test_run_reads_workday_sites_once_a_day(tmp_path, monkeypatch):
+    from jobwatch import cli
+    from jobwatch.models import CheckResult
+
+    class F:
+        allow_render = False
+        def __init__(self, *a, **k): pass
+        def close(self): pass
+
+    read = []
+    def fake_check(f, src, n):
+        read.append(src.name)
+        return CheckResult(src, jobs=[], method=src.adapter)
+    adapters = {"WD Corp": "workday", "Site Corp": "sitemap"}
+    monkeypatch.setattr(cli, "Fetcher", F)
+    monkeypatch.setattr(cli, "check_company", fake_check)
+    monkeypatch.setattr(cli, "resolve", lambda f, c, cache, force=False: Company(c.name, c.url, adapter=adapters[c.name]))
+    csv = tmp_path / "c.csv"
+    csv.write_text("name,priority,group,url,enabled\nWD Corp,High,x,https://wd.com,yes\n"
+                   "Site Corp,High,x,https://site.com,yes\n", encoding="utf-8")
+    args = ["run", "--config", str(ROOT / "config.yaml"), "--companies", str(csv),
+            "--state", str(tmp_path / "s.json"), "--notify", "none"]
+    assert main(args) == 0 and main(args) == 0
+    assert read == ["WD Corp", "Site Corp", "Site Corp"]   # 2nd run: Workday waits, others read

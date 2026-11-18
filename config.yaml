@@ -1569,6 +1569,11 @@ max_jobs_per_api: 300
 workday_countries:
   - Netherlands
   - Belgium
+# Read Workday sites (*.myworkdayjobs.com) only about once a day: since mid-Nov 2026 Workday
+# answers most requests from GitHub's runners with "429 Too Many Requests". 21 hours so a
+# 3-hourly run always picks them up within the day even when GitHub shifts the schedule.
+# 0 = read them on every run.
+workday_every_hours: 21
 # Skip companies below this priority (Low | Medium | High).
 min_priority: Low
 

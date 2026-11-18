@@ -138,6 +138,25 @@ class State:
         entry["consecutive_errors"] = entry.get("consecutive_errors", 0) + 1
         return entry["consecutive_errors"]
 
+    def due(self, company: str, key: str, every_hours: float, now: datetime | None = None) -> bool:
+        """True if `key` (e.g. a Workday read) was last tried for this company over every_hours ago.
+
+        Marks it as tried now when it is due, so a failing read also waits for the next turn.
+        """
+        if not every_hours or every_hours <= 0:
+            return True
+        now = now or datetime.now(timezone.utc)
+        entry = self.data["companies"].setdefault(company, {"seen": {}})
+        last = entry.get(key)
+        if last:
+            try:
+                if (now - datetime.fromisoformat(last)).total_seconds() < every_hours * 3600:
+                    return False
+            except ValueError:
+                pass
+        entry[key] = now.isoformat(timespec="seconds")
+        return True
+
     def bump_run(self) -> int:
         self.data["runs"] += 1
         return self.data["runs"]
