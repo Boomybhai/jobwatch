@@ -59,7 +59,7 @@ Paebbl B.V.,High,Startups & scale-ups,https://careers.paebbl.com/jobs,yes,auto,a
 Paques Technology B.V.,High,"Water, waste & circular",https://www.paquesglobal.com/careers,yes,auto,auto,Careers page,
 Patheon Biologics BV.,High,"Pharma, biotech & medtech",https://jobs.thermofisher.com/global/en/netherlands,yes,auto,auto,Careers page (Thermo Fisher NL),
 Proton Ventures Engineering B.V.,High,"Energy, fuels & gases",https://www.protonventures.com/,yes,auto,auto,Website (no separate careers page found),
-SABIC Limburg B.V.,High,Chemicals & process,https://jobs.sabic.com/,yes,successfactors,auto,SuccessFactors job feed (werkenbijsabic.nl is dead),
+SABIC Limburg B.V.,High,Chemicals & process,https://jobs.sabic.com/,no,successfactors,auto,"Paused 2026-11-18: jobs.sabic.com moved to SAP's new JavaScript job widget and its sitemap is now empty, so no jobs can be read automatically - check jobs.sabic.com/go/Europe-Jobs/4387723/ by hand",
 SBM Offshore Amsterdam B.V.,High,Offshore & upstream,https://careers.sbmoffshore.com/go/The-Netherlands/8785302/,yes,auto,auto,Careers page (NL),
 Sitech Services B.V.,High,Chemicals & process,https://www.werkenbijsitech.nl/,yes,auto,auto,Careers page,
 Stamicarbon B.V.,High,Chemicals & process,https://www.stamicarbon.com/vacancies,yes,auto,auto,Vacancies page,
@@ -250,7 +250,7 @@ Bambooder Biobased Fibers B.V.,Low,Startups & scale-ups,https://www.bambooder.co
 Barry Callebaut Nederland B.V.,Low,Food ingredients & agri-processing,https://jobs.barry-callebaut.com/,yes,successfactors,auto,SuccessFactors job feed,
 Basic Pharma Manufacturing B.V.,Low,"Pharma, biotech & medtech",https://jobs.basicpharma.nl/nl,yes,auto,auto,Careers page (NL),
 Baxter B.V.,Low,Chemicals & process,https://jobs.baxter.com/,yes,auto,auto,Careers page,
-Bayer B.V.,Low,"Pharma, biotech & medtech",https://talent.bayer.com/careers?domain=bayer.com&location=Netherlands,yes,eightfold,auto,Careers page (filter: Netherlands),
+Bayer B.V.,Low,"Pharma, biotech & medtech",https://bayer.wd103.myworkdayjobs.com/Bayer_External_Career_Site,yes,workday,auto,Workday board (Bayer left Eightfold on 2026-11-17; country filter from settings),
 BE Semiconductor Industries N.V.,Low,High-tech & semiconductors,https://www.besi.com/careers/jobs/,yes,auto,auto,Careers page,
 Beiersdorf N.V.,Low,FMCG & food,https://www.beiersdorf.nl/career/jobs-and-application/application,yes,auto,auto,Careers page (NL),
 Braskem Netherlands B.V.,Low,Chemicals & process,https://www.braskem.com/careers,yes,auto,auto,Careers page,
@@ -525,7 +525,7 @@ John Cockerill (Belgium),High,"Energy, fuels & gases",https://careers.johncocker
 NEM Energy B.V.,Medium,"Energy, fuels & gases",https://nemenergy.recruitee.com/,yes,recruitee,auto,Recruitee job board,"added 2026-11-14 as a John Cockerill competitor (heat-recovery steam generators & boilers, Leiden)"
 Accelera by Cummins (Oevel),Medium,"Energy, fuels & gases",https://accelera.cummins.jobs/,yes,auto,auto,Careers page (global),"added 2026-11-14 as a John Cockerill competitor; Belgium (PEM electrolyser factory, Oevel)"
 "Estée Lauder Companies (Oevel, Belgium)",Medium,FMCG & food,https://careers.elcompanies.com/careers?domain=elcompanies.com&location=Belgium,yes,eightfold,auto,Eightfold job feed (Belgium filter in the link),"added 2026-11-14 as a L'Oréal competitor; Belgium (cosmetics manufacturing & European distribution, Oevel/Westerlo)"
-Bayer (Belgium),Low,"Pharma, biotech & medtech",https://talent.bayer.com/careers?domain=bayer.com&location=Belgium,yes,eightfold,auto,Eightfold job feed (Belgium filter in the link),"added 2026-11-14 on request; Belgium (Diegem, Antwerp, Brussels)"
+Bayer (Belgium),Low,"Pharma, biotech & medtech",https://bayer.wd103.myworkdayjobs.com/Bayer_External_Career_Site,yes,workday,auto,Workday board (Bayer left Eightfold on 2026-11-17; country filter from settings),"added 2026-11-14 on request; Belgium (Diegem, Antwerp, Brussels)"
 Syngenta (Netherlands),Low,Food ingredients & agri-processing,https://jobs.syngenta.com/,yes,auto,auto,Careers page (global),added 2026-11-14 as a Bayer Crop Science competitor; Enkhuizen seeds site
 Corteva Agriscience (Netherlands),Low,Food ingredients & agri-processing,https://apply.corteva.com/careers?domain=corteva.com&location=Netherlands,yes,eightfold,auto,Eightfold job feed (Netherlands filter in the link),added 2026-11-14 as a Bayer Crop Science competitor; few NL/BE roles - may list 0
 NAQI,Low,FMCG & food,https://www.naqi.com/,no,auto,auto,Website,"added 2026-11-14 on request; disabled: no careers page (jobs only on LinkedIn) - check by hand; Belgium (functional skincare, Halen)"
