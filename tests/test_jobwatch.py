@@ -1816,3 +1816,35 @@ def test_run_reads_workday_sites_once_a_day(tmp_path, monkeypatch):
             "--state", str(tmp_path / "s.json"), "--notify", "none"]
     assert main(args) == 0 and main(args) == 0
     assert read == ["WD Corp", "Site Corp", "Site Corp"]   # 2nd run: Workday waits, others read
+
+
+def test_successfactors_job_page_in_mexico_is_dropped():
+    # LyondellBasell's Rincon de Guadalupe (Mexico) job was once alerted as "Netherlands"
+    # because its page location wasn't read; the schema.org address must decide.
+    from jobwatch.enrich import parse_job_page
+    from jobwatch.filters import resolve_location
+    html = ('<html><body><div class="jobDisplayShell" itemscope="itemscope" itemtype="http://schema.org/JobPosting">'
+            '<span itemprop="jobLocation" itemscope="" itemtype="http://schema.org/Place">'
+            '<span itemprop="address" itemscope="" itemtype="http://schema.org/PostalAddress">'
+            '<meta itemprop="addressLocality" content="Rincon de Guadalupe"><meta itemprop="addressRegion" content="SLP">'
+            '<meta itemprop="postalCode" content="78395"><meta itemprop="addressCountry" content="MX"></span></span>'
+            '<h1><span itemprop="title">Production Supervisor </span></h1>'
+            '<p id="job-location" class="jobLocation"><span class="jobGeoLocation">SLP, MX, 78395</span></p>'
+            '<span itemprop="description">' + "Lead the production shift team at our compounding plant. " * 12 +
+            '</span></div></body></html>')
+    info = parse_job_page(html)
+    assert "mexico" in info["location"].lower()
+    s = load_settings(ROOT / "config.yaml")
+    j = Job("Lyondell Chemie Nederland B.V.", info["title"],
+            "https://careers.lyondellbasell.com/job/Rincon-de-Guadalupe-Production-Supervisor-SLP-78395/1449223600/",
+            info["location"], description=info["description"])
+    assert not resolve_location(j, s)
+
+
+def test_dutch_town_wins_over_wrong_country_on_agency_site():
+    # TMC lists an MSD Animal Health job in Boxmeer (NL) with country "Mexico"
+    from jobwatch.filters import resolve_location
+    s = load_settings(ROOT / "config.yaml")
+    j = Job("TMC", "Reliability Engineer", "https://www.themembercompany.com/careers/reliability-engineer-FmEAN",
+            "Boxmeer, Mexico")
+    assert resolve_location(j, s)
