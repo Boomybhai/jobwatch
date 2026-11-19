@@ -1848,3 +1848,54 @@ def test_dutch_town_wins_over_wrong_country_on_agency_site():
     j = Job("TMC", "Reliability Engineer", "https://www.themembercompany.com/careers/reliability-engineer-FmEAN",
             "Boxmeer, Mexico")
     assert resolve_location(j, s)
+
+
+SF_RSS_TRANSLATED = """<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:g="http://base.google.com/ns/1.0"><channel>
+<item><title>Functietitel: HSE Officer (all genders) (Lochem, NL)</title><description>x</description>
+<link>https://mycareers.frieslandcampina.com/job/Lochem-HSE-Officer/1377776757/</link><g:id>1377776757</g:id><g:location>Lochem, NL</g:location></item>
+<item><title>职位名称: HSE Officer (all genders) (Lochem, NL)</title><description>x</description>
+<link>https://mycareers.frieslandcampina.com/job/Lochem-HSE-Officer/1377776257/</link><g:id>1377776257</g:id><g:location>Lochem, NL</g:location></item>
+<item><title>Titre: HSE Officer (all genders) (Lochem, NL)</title><description>x</description>
+<link>https://mycareers.frieslandcampina.com/job/Lochem-HSE-Officer/1377776557/</link><g:id>1377776557</g:id><g:location>Lochem, NL</g:location></item>
+<item><title>Process Engineer (Leeuwarden, NL)</title><description>x</description>
+<link>https://mycareers.frieslandcampina.com/job/Leeuwarden-Process-Engineer/1400/</link><g:id>1400</g:id><g:location>Leeuwarden, NL</g:location></item>
+<item><title>Process Engineer (Leeuwarden, NL)</title><description>x</description>
+<link>https://mycareers.frieslandcampina.com/job/Leeuwarden-Process-Engineer/1401/</link><g:id>1401</g:id><g:location>Leeuwarden, NL</g:location></item>
+</channel></rss>"""
+
+
+def test_successfactors_translated_copies_are_one_job():
+    f = FakeFetcher(html=SF_RSS_TRANSLATED)
+    res = check_company(f, Company("FrieslandCampina", "https://mycareers.frieslandcampina.com/", adapter="successfactors"))
+    titles = [j.title for j in res.jobs]
+    # the label is stripped and the translated copies collapse to the first one
+    assert titles.count("HSE Officer (all genders)") == 1
+    assert res.jobs[0].id == "1377776757"
+    # two unlabelled postings with the same title are separate openings: both kept
+    assert titles.count("Process Engineer") == 2
+
+
+def test_successfactors_title_label_regex_leaves_normal_titles():
+    from jobwatch.adapters import SF_TITLE_LABEL_RE
+    assert SF_TITLE_LABEL_RE.sub("", "Stellenbezeichnung: Chemist") == "Chemist"
+    assert SF_TITLE_LABEL_RE.sub("", "Munkakör megnevezése: Chemist") == "Chemist"
+    assert SF_TITLE_LABEL_RE.sub("", "Chức vụ: Chemist") == "Chemist"
+    for t in ("Scientist: Process Development", "Cargo Handler", "Titration Analyst"):
+        assert SF_TITLE_LABEL_RE.sub("", t) == t
+
+
+def test_smartrecruiters_country_filter_and_paging():
+    base = "https://api.smartrecruiters.com/v1/companies/SGS/postings?limit=100&country=nl"
+    page1 = [{"id": str(i), "name": f"Job {i}", "location": {"city": "Spijkenisse", "country": "nl"}}
+             for i in range(100)]
+    page2 = [{"id": "100", "name": "Junior Projectleider Bodem",
+              "location": {"city": "Heeswijk Dinther", "country": "nl"}}]
+    f = FakeFetcher(json_by_url={
+        base: {"totalFound": 101, "content": page1},
+        base + "&offset=100": {"totalFound": 101, "content": page2},
+    })
+    res = check_company(f, Company("SGS Nederland", "https://careers.smartrecruiters.com/SGS?country=nl"))
+    assert not res.error and len(res.jobs) == 101
+    assert res.jobs[-1].title == "Junior Projectleider Bodem"
+    assert res.jobs[-1].url == "https://jobs.smartrecruiters.com/SGS/100"

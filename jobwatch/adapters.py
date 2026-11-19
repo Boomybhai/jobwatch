@@ -304,23 +304,39 @@ def fetch_ashby(f: Fetcher, company: Company) -> list[Job]:
 
 # ---------------------------------------------------------- SmartRecruiters
 def fetch_smartrecruiters(f: Fetcher, company: Company) -> list[Job]:
-    segs = [s for s in urlsplit(company.url).path.split("/") if s]
+    """SmartRecruiters postings API. Big global boards (SGS: thousands of jobs) need a
+    country filter in the link (careers.smartrecruiters.com/SGS?country=nl) and paging:
+    the API gives at most 100 postings per request."""
+    parts = urlsplit(company.url)
+    segs = [s for s in parts.path.split("/") if s]
     slug = segs[0]
-    data = f.get_json(f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100")
+    country = ((parse_qs(parts.query).get("country") or [""])[0]).strip().lower()
+    base = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100"
+    if country:
+        base += f"&country={country}"
     jobs = []
-    for p in data.get("content", []):
-        loc = p.get("location") or {}
-        jobs.append(
-            Job(
-                company=company.name,
-                title=p.get("name", ""),
-                url=f"https://jobs.smartrecruiters.com/{slug}/{p.get('id')}",
-                location=", ".join(x for x in [loc.get("city"), loc.get("country")] if x),
-                posted=p.get("releasedDate", ""),
-                id=str(p.get("id")),
+    for page in range(SMARTRECRUITERS_MAX_PAGES):
+        data = f.get_json(base + (f"&offset={page * 100}" if page else ""))
+        content = data.get("content", [])
+        for p in content:
+            loc = p.get("location") or {}
+            jobs.append(
+                Job(
+                    company=company.name,
+                    title=p.get("name", ""),
+                    url=f"https://jobs.smartrecruiters.com/{slug}/{p.get('id')}",
+                    location=", ".join(x for x in [loc.get("city"), loc.get("country")] if x),
+                    posted=p.get("releasedDate", ""),
+                    id=str(p.get("id")),
+                )
             )
-        )
+        total = data.get("totalFound") or 0
+        if len(content) < 100 or len(jobs) >= total:
+            break
     return jobs
+
+
+SMARTRECRUITERS_MAX_PAGES = 10
 
 
 # ---------------------------------------------------------------- Workable
@@ -427,6 +443,16 @@ def fetch_oracle(f: Fetcher, company: Company, max_jobs: int) -> list[Job]:
 
 # ------------------------------------------------------- SAP SuccessFactors
 SF_LOC_TAIL_RE = re.compile(r"\s*\(([^()]*)\)\s*$")
+# Translated copies of one SuccessFactors posting put a "Job title:" label in front of the
+# title (FrieslandCampina: "Functietitel: HSE Officer", "Titre: HSE Officer", "职位名称: ...").
+SF_TITLE_LABEL_RE = re.compile(
+    r"^\s*(?:job\s*title|position\s*title|functietitel|functienaam|titre(?:\s+du\s+poste)?|"
+    r"intitul[ée]\s+du\s+poste|stellenbezeichnung|stellentitel|jobtitel|titolo(?:\s+della\s+posizione)?|"
+    r"t[íi]tulo(?:\s+del?\s+(?:puesto|cargo|vaga))?|cargo|nazwa\s+stanowiska|munkak[öo]r\s+megnevez[ée]se|"
+    r"ch[ứu]c\s+v[ụu]|职位名称|職位名稱|職種名|직무명|n[áa]zev\s+pozice|denumirea\s+postului|"
+    r"[čc]asovni\s+naziv|befattning|stillingstitel|jobbtittel|ty[öo]nimike|pozisyon)\s*[:：]\s*",
+    re.I,
+)
 
 
 def _country_names(loc: str) -> str:
@@ -464,6 +490,7 @@ def fetch_successfactors(f: Fetcher, company: Company, max_jobs: int) -> list[Jo
             raise first_exc
         raise ValueError(f"no SuccessFactors job feed at {base}/sitemap.xml or /sitemal.xml")
     jobs: list[Job] = []
+    flags: list[bool] = []  # title had a translated "Job title:" label
     if not soup.find("item"):  # plain sitemap: job URLs only
         for loc in soup.find_all("loc"):
             u = loc.get_text(strip=True)
@@ -478,6 +505,8 @@ def fetch_successfactors(f: Fetcher, company: Company, max_jobs: int) -> list[Jo
         if employer and employer not in (emp.get_text(" ", strip=True).lower() if emp else ""):
             continue
         title = item.find("title").get_text(" ", strip=True) if item.find("title") else ""
+        labelled = bool(SF_TITLE_LABEL_RE.match(title))
+        title = SF_TITLE_LABEL_RE.sub("", title, count=1)
         loc_tag = item.find("g:location") or item.find("location")
         loc = loc_tag.get_text(" ", strip=True) if loc_tag else ""
         m = SF_LOC_TAIL_RE.search(title)
@@ -499,7 +528,22 @@ def fetch_successfactors(f: Fetcher, company: Company, max_jobs: int) -> list[Jo
             id=(gid.get_text(strip=True) if gid else "") or link.split("?")[0],
             description=desc if len(desc) >= 400 else "",
         ))
-    return jobs
+        flags.append(labelled)
+    return _drop_sf_translations(jobs, flags)
+
+
+def _drop_sf_translations(jobs: list[Job], labelled: list[bool]) -> list[Job]:
+    """One job per translated set: copies whose title had a "Job title:" label are dropped
+    when an unlabelled posting (or an earlier copy) has the same title and location."""
+    key = lambda j: (j.title.lower(), j.location.lower())  # noqa: E731
+    plain = {key(j) for j, lab in zip(jobs, labelled) if not lab}
+    out, seen = [], set()
+    for j, lab in zip(jobs, labelled):
+        if lab and (key(j) in plain or key(j) in seen):
+            continue
+        seen.add(key(j))
+        out.append(j)
+    return out
 
 
 # ---------------------------------------------------------------- Eightfold
