@@ -157,6 +157,10 @@ class State:
         entry[key] = now.isoformat(timespec="seconds")
         return True
 
+    def forget(self, company: str, key: str) -> None:
+        """Drop a `due` mark, so the read is due again on the next run."""
+        self.data["companies"].get(company, {}).pop(key, None)
+
     def bump_run(self) -> int:
         self.data["runs"] += 1
         return self.data["runs"]

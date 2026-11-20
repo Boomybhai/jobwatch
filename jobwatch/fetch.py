@@ -143,7 +143,11 @@ class Fetcher:
         return resp.json()
 
     def _may_retry_429(self, url: str) -> bool:
-        return self._throttled.get(_site_family(url), 0) < THROTTLE_GIVE_UP_AFTER
+        return not self.throttled(url)
+
+    def throttled(self, url: str) -> bool:
+        """True once this site family (e.g. *.myworkdayjobs.com) kept answering 429 this run."""
+        return self._throttled.get(_site_family(url), 0) >= THROTTLE_GIVE_UP_AFTER
 
     def _note_429(self, url: str, resp: requests.Response) -> None:
         if resp.status_code != 429:

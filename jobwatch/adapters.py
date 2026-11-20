@@ -702,9 +702,25 @@ def _is_homerun(soup, base_url: str) -> bool:
         soup.find("meta", attrs={"name": "homerun:company_id"}) or soup.find("meta", attrs={"property": "homerun:company_id"}))
 
 
+JOBTOOLZ_JOB_RE = re.compile(r"^/[a-z]{2}/[a-z0-9][a-z0-9-]*[a-z0-9]/?$", re.I)
+JOBTOOLZ_NOT_JOBS = re.compile(r"spontan|spontaneous|spontanee|spontanée|cookie|privacy|disclaimer", re.I)
+
+
+def _is_jobtoolz(soup, base_url: str) -> bool:
+    """Jobtoolz boards (x.jobtoolz.com or a custom jobs.company.be domain): jobs live at /<lang>/<slug>."""
+    if urlsplit(base_url).netloc.endswith("jobtoolz.com"):
+        return True
+    for tag in soup.find_all(["meta", "link"]):
+        ref = tag.get("content") or tag.get("href") or ""
+        if isinstance(ref, str) and ("images.jobtoolz.com" in ref or "jobtoolz-assets" in ref):
+            return True
+    return False
+
+
 def parse_html_jobs(html: str, base_url: str, company: str) -> list[Job]:
     soup = BeautifulSoup(html, "lxml")
     homerun = _is_homerun(soup, base_url)
+    jobtoolz = _is_jobtoolz(soup, base_url)
     base_tag = soup.find("base", href=True)
     if base_tag:  # <base href> changes how relative links resolve
         base_url = urljoin(base_url, base_tag["href"].strip())
@@ -731,7 +747,9 @@ def parse_html_jobs(html: str, base_url: str, company: str) -> list[Job]:
             continue
         parts = urlsplit(absolute)
         homerun_job = homerun and parts.netloc == urlsplit(base_url).netloc and HOMERUN_JOB_RE.match(parts.path)
-        if not homerun_job and not JOBLINK_RE.search(parts.path + "?" + parts.query):
+        jobtoolz_job = (jobtoolz and parts.netloc == urlsplit(base_url).netloc and
+                        JOBTOOLZ_JOB_RE.match(parts.path) and not JOBTOOLZ_NOT_JOBS.search(parts.path))
+        if not homerun_job and not jobtoolz_job and not JOBLINK_RE.search(parts.path + "?" + parts.query):
             continue
         if homerun_job:  # /operator/en and /operator are the same job
             absolute = f"{parts.scheme}://{parts.netloc}" + re.sub(r"/[a-z]{2}/?$", "", parts.path.rstrip("/"))

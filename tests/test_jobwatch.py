@@ -1818,6 +1818,60 @@ def test_run_reads_workday_sites_once_a_day(tmp_path, monkeypatch):
     assert read == ["WD Corp", "Site Corp", "Site Corp"]   # 2nd run: Workday waits, others read
 
 
+def test_throttled_workday_sites_are_read_on_the_next_run(tmp_path, monkeypatch):
+    # 20 Nov 2026: Workday answered 429 to the whole run and 72 sites then waited 21 h.
+    # Once Workday keeps throttling, the rest are skipped unmarked and the 429 ones retried.
+    from jobwatch import cli
+    from jobwatch.models import CheckResult
+
+    run = {"n": 0}
+    class F:
+        allow_render = False
+        def __init__(self, *a, **k): self.hits = 0
+        def close(self): pass
+        def throttled(self, url): return run["n"] == 1 and self.hits >= 1
+
+    read = []
+    def fake_check(f, src, n):
+        read.append((run["n"], src.name))
+        if src.adapter == "workday" and run["n"] == 1:
+            f.hits += 1
+            return CheckResult(src, error="HTTPError: 429 Client Error: Too Many Requests", method="workday")
+        return CheckResult(src, jobs=[], method=src.adapter)
+    adapters = {"WD A": "workday", "WD B": "workday", "Site Corp": "sitemap"}
+    monkeypatch.setattr(cli, "Fetcher", F)
+    monkeypatch.setattr(cli, "check_company", fake_check)
+    monkeypatch.setattr(cli, "resolve", lambda f, c, cache, force=False: Company(c.name, c.url, adapter=adapters[c.name]))
+    csv = tmp_path / "c.csv"
+    csv.write_text("name,priority,group,url,enabled\nWD A,High,x,https://a.com,yes\n"
+                   "WD B,High,x,https://b.com,yes\nSite Corp,High,x,https://site.com,yes\n", encoding="utf-8")
+    args = ["run", "--config", str(ROOT / "config.yaml"), "--companies", str(csv),
+            "--state", str(tmp_path / "s.json"), "--notify", "none"]
+    for n in (1, 2, 3):
+        run["n"] = n
+        assert main(args) == 0
+    assert read == [(1, "WD A"), (1, "Site Corp"),                    # B skipped while throttled
+                    (2, "WD A"), (2, "WD B"), (2, "Site Corp"),       # both read next run
+                    (3, "Site Corp")]                                 # then once a day again
+
+
+def test_jobtoolz_boards_list_their_jobs():
+    # TÜV Austria Belgium, Vanheede, IVBO, DEKRA: Jobtoolz boards put jobs at /<lang>/<slug>,
+    # which the plain link rules didn't see (0 listed while "Process Safety Engineer" was open)
+    from jobwatch.adapters import parse_html_jobs
+    html = ('<html><head><meta property="og:image" content="https://images.jobtoolz.com/assets/companies/1/x.jpg">'
+            '</head><body><a href="/nl">NL version</a>'
+            '<a href="https://jobs.vanheede.com/en/maintenance-supervisor"><h3>Maintenance supervisor</h3></a>'
+            '<a href="/en/process-safety-engineer">Process Safety Engineer</a>'
+            '<a href="/en/apply-spontaneously">Apply spontaneously</a>'
+            '<a href="https://www.vanheede.com/en/about-our-group">About our group</a>'
+            '<a href="https://jobtoolz.com/en/privacy-policy">Privacy policy</a></body></html>')
+    jobs = parse_html_jobs(html, "https://jobs.vanheede.com/en", "Vanheede")
+    assert sorted(j.title for j in jobs) == ["Maintenance supervisor", "Process Safety Engineer"]
+    plain = html.replace("images.jobtoolz.com", "cdn.example.com")  # other sites: unchanged
+    assert parse_html_jobs(plain, "https://www.example.com/en", "X") == []
+
+
 def test_successfactors_job_page_in_mexico_is_dropped():
     # LyondellBasell's Rincon de Guadalupe (Mexico) job was once alerted as "Netherlands"
     # because its page location wasn't read; the schema.org address must decide.

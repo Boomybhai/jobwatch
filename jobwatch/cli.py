@@ -50,12 +50,20 @@ def run(args: argparse.Namespace) -> int:
         for i, company in enumerate(companies, 1):
             cache = state.cache(company.name)
             source = resolve(fetcher, company, cache, force=args.rediscover)
+            if source.adapter == "workday" and _throttled(fetcher, source.url):
+                # Workday keeps answering 429 this run: don't ask the rest now and don't mark
+                # them as tried, so the next run reads them instead of waiting a whole day
+                log.info("[%d/%d] %-45s skipped (Workday answers 429 this run - next run)",
+                         i, len(companies), company.name[:45])
+                continue
             if source.adapter == "workday" and not args.only and \
                     not state.due(company.name, "workday_last_try", settings.workday_every_hours):
                 log.info("[%d/%d] %-45s skipped (Workday: read once every %g h)",
                          i, len(companies), company.name[:45], settings.workday_every_hours)
                 continue
             result = check_company(fetcher, source, settings.max_jobs_per_api)
+            if source.adapter == "workday" and result.error and "429" in result.error:
+                state.forget(company.name, "workday_last_try")  # throttled, not read -> next run
             if (result.error or not result.jobs) and source.adapter != "html":
                 invalidate(cache)  # feed moved or broke -> look again next run
             if result.error:
@@ -296,6 +304,11 @@ def main(argv: list[str] | None = None) -> int:
         except EOFError:
             pass
     return code
+
+
+def _throttled(fetcher, url: str) -> bool:
+    check = getattr(fetcher, "throttled", None)
+    return bool(check and check(url))
 
 
 if __name__ == "__main__":
