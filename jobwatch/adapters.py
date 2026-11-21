@@ -681,9 +681,11 @@ def fetch_sitemap(f: Fetcher, company: Company) -> list[Job]:
 
 # -------------------------------------------------------------- plain HTML
 JOBLINK_RE = re.compile(
-    r"(job|jobs|vacat|vacanc|position|opening|requisition|stelle|phd-project|/o/|/vacature|careers?[^/]*/[^/?]+/?(?:\?|$)|werken-bij[^/]*/[^/?]+/?(?:\?|$)|join-?us/[^/?]+/?(?:\?|$))",
+    r"(job|jobs|vacat|vacanc|position|opening|requisition|stelle|phd-project|/o/|/vacature|careers?[^/]*/[^/?]+/?(?:\?|$)|werken-bij[^/]*/[^/?]+/?(?:\?|$)|join-?us/[^/?]+/?(?:\?|$)|offres?-(?:d-?)?emplois?/[^/?]+/?(?:\?|$))",
     re.I,
 )
+# "Read more" button text inside a job card link: "Ingénieur fiabilité Voir l'offre" -> the title
+CTA_TAIL_RE = re.compile(r"\s+(?:voir l['’]offre|read more|view job|view vacancy|lees meer|bekijk vacature|meer info)\s*$", re.I)
 NAV_WORDS = {
     "jobs", "vacancies", "vacatures", "careers", "carrière", "all jobs", "alle vacatures",
     "search jobs", "view all jobs", "job search", "apply", "apply now", "solliciteer",
@@ -740,6 +742,7 @@ def parse_html_jobs(html: str, base_url: str, company: str) -> list[Job]:
         head_text = " ".join(head.get_text(" ", strip=True).split()) if head else ""
         if head_text != text and 6 <= len(head_text) <= 140 and head_text.lower() not in NAV_WORDS:
             text = head_text
+        text = CTA_TAIL_RE.sub("", text)
         if not (6 <= len(text) <= 140) or text.lower() in NAV_WORDS:
             continue
         absolute = urljoin(base_url, href).split("#")[0]

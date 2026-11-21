@@ -1953,3 +1953,13 @@ def test_smartrecruiters_country_filter_and_paging():
     assert not res.error and len(res.jobs) == 101
     assert res.jobs[-1].title == "Junior Projectleider Bodem"
     assert res.jobs[-1].url == "https://jobs.smartrecruiters.com/SGS/100"
+
+
+def test_french_offres_emploi_job_links_are_recognised():
+    from jobwatch.adapters import parse_html_jobs
+    html = ('<a href="https://www.aperamchatelet.be/fr/offres-emploi/">Nous rejoindre</a>'
+            '<a href="https://www.aperamchatelet.be/offres-emploi/ingenieur-fiabilite/">'
+            '<p>Ingénieur fiabilité</p><span>Voir l\'offre</span></a>')
+    jobs = parse_html_jobs(html, "https://www.aperamchatelet.be/fr/offres-emploi/", "Aperam")
+    assert [(j.title, j.url) for j in jobs] == \
+        [("Ingénieur fiabilité", "https://www.aperamchatelet.be/offres-emploi/ingenieur-fiabilite/")]
