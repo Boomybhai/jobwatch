@@ -1788,8 +1788,8 @@ def test_state_due_waits_between_reads(tmp_path):
     assert not State(tmp_path / "s.json").due("Shell", "workday_last_try", 21, now=t0 + timedelta(hours=22))
 
 
-def test_shipped_config_reads_workday_daily():
-    assert 0 < load_settings(ROOT / "config.yaml").workday_every_hours <= 24
+def test_shipped_config_reads_workday_every_36_hours():
+    assert load_settings(ROOT / "config.yaml").workday_every_hours == 36
 
 
 def test_run_reads_workday_sites_once_a_day(tmp_path, monkeypatch):
