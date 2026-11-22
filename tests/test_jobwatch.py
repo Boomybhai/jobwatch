@@ -1955,6 +1955,18 @@ def test_smartrecruiters_country_filter_and_paging():
     assert res.jobs[-1].url == "https://jobs.smartrecruiters.com/SGS/100"
 
 
+def test_smartrecruiters_city_filter_keeps_only_that_site():
+    base = "https://api.smartrecruiters.com/v1/companies/BoschGroup/postings?limit=100&country=nl"
+    f = FakeFetcher(json_by_url={base: {"totalFound": 3, "content": [
+        {"id": "1", "name": "Process Engineer", "location": {"city": "Tilburg", "country": "nl"}},
+        {"id": "2", "name": "Service Technician", "location": {"city": "Nieuwegein", "country": "nl"}},
+        {"id": "3", "name": "Quality Engineer", "location": {"city": " tilburg", "country": "nl"}},
+    ]}})
+    res = check_company(f, Company("Bosch Tilburg",
+                                   "https://careers.smartrecruiters.com/BoschGroup?country=nl&city=Tilburg"))
+    assert not res.error and [j.title for j in res.jobs] == ["Process Engineer", "Quality Engineer"]
+
+
 def test_french_offres_emploi_job_links_are_recognised():
     from jobwatch.adapters import parse_html_jobs
     html = ('<a href="https://www.aperamchatelet.be/fr/offres-emploi/">Nous rejoindre</a>'

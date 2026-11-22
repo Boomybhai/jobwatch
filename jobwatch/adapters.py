@@ -306,20 +306,27 @@ def fetch_ashby(f: Fetcher, company: Company) -> list[Job]:
 def fetch_smartrecruiters(f: Fetcher, company: Company) -> list[Job]:
     """SmartRecruiters postings API. Big global boards (SGS: thousands of jobs) need a
     country filter in the link (careers.smartrecruiters.com/SGS?country=nl) and paging:
-    the API gives at most 100 postings per request."""
+    the API gives at most 100 postings per request. A city in the link
+    (careers.smartrecruiters.com/BoschGroup?country=nl&city=Tilburg) keeps only that site's jobs."""
     parts = urlsplit(company.url)
     segs = [s for s in parts.path.split("/") if s]
     slug = segs[0]
-    country = ((parse_qs(parts.query).get("country") or [""])[0]).strip().lower()
+    query = parse_qs(parts.query)
+    country = ((query.get("country") or [""])[0]).strip().lower()
+    cities = {c.strip().lower() for c in ((query.get("city") or [""])[0]).split(",") if c.strip()}
     base = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100"
     if country:
         base += f"&country={country}"
     jobs = []
+    seen = 0
     for page in range(SMARTRECRUITERS_MAX_PAGES):
         data = f.get_json(base + (f"&offset={page * 100}" if page else ""))
         content = data.get("content", [])
+        seen += len(content)
         for p in content:
             loc = p.get("location") or {}
+            if cities and (loc.get("city") or "").strip().lower() not in cities:
+                continue
             jobs.append(
                 Job(
                     company=company.name,
@@ -331,7 +338,7 @@ def fetch_smartrecruiters(f: Fetcher, company: Company) -> list[Job]:
                 )
             )
         total = data.get("totalFound") or 0
-        if len(content) < 100 or len(jobs) >= total:
+        if len(content) < 100 or seen >= total:
             break
     return jobs
 
