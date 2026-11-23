@@ -1988,3 +1988,14 @@ def test_html_reads_werkenbij_links_without_hyphen():
     urls = [j.url for j in parse_html_jobs(html, "https://www.euroma.com/nl/werkenbij", "Euroma")]
     assert urls == ["https://www.euroma.com/nl/werkenbij/qa-officer",
                     "https://www.euroma.com/nl/werkenbij/continuous-improvement-specialist"]
+
+
+def test_html_reads_offer_links():
+    # Delpharm's job site lists vacancies at /en/offer/<id>; "what we offer" pages are not jobs
+    from jobwatch.adapters import parse_html_jobs
+    html = """<html><body>
+      <a href="/en/offer/10649-NzY5MjMtdEppU0pF"><strong>Process Engineer H/F</strong></a>
+      <a href="/en/what-we-offer">What we offer our employees</a>
+    </body></html>"""
+    urls = [j.url for j in parse_html_jobs(html, "https://job.delpharm.com/", "Delpharm")]
+    assert urls == ["https://job.delpharm.com/en/offer/10649-NzY5MjMtdEppU0pF"]
