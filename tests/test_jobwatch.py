@@ -1999,3 +1999,14 @@ def test_html_reads_offer_links():
     </body></html>"""
     urls = [j.url for j in parse_html_jobs(html, "https://job.delpharm.com/", "Delpharm")]
     assert urls == ["https://job.delpharm.com/en/offer/10649-NzY5MjMtdEppU0pF"]
+
+
+def test_html_reads_banen_links():
+    # Stedin lists vacancies at /banen/<city>/<title>/<id>/<id> ("banen" = jobs)
+    from jobwatch.adapters import parse_html_jobs
+    html = """<html><body>
+      <a href="/banen/rotterdam/senior-python-developer/3297/38397721216">Senior Python Developer</a>
+      <a href="/over-stedin/ons-net">Over Stedin en ons net</a>
+    </body></html>"""
+    urls = [j.url for j in parse_html_jobs(html, "https://werkenbij.stedin.net/", "Stedin")]
+    assert urls == ["https://werkenbij.stedin.net/banen/rotterdam/senior-python-developer/3297/38397721216"]
