@@ -1975,3 +1975,16 @@ def test_french_offres_emploi_job_links_are_recognised():
     jobs = parse_html_jobs(html, "https://www.aperamchatelet.be/fr/offres-emploi/", "Aperam")
     assert [(j.title, j.url) for j in jobs] == \
         [("Ingénieur fiabilité", "https://www.aperamchatelet.be/offres-emploi/ingenieur-fiabilite/")]
+
+
+def test_html_reads_werkenbij_links_without_hyphen():
+    # Euroma lists vacancies at /nl/werkenbij/<slug> (no hyphen, no "vacature" in the link)
+    from jobwatch.adapters import parse_html_jobs
+    html = """<html><body>
+      <a href="/nl/werkenbij/qa-officer"><h3>QA Officer</h3></a>
+      <a href="/nl/werkenbij/continuous-improvement-specialist">Continuous Improvement Specialist</a>
+      <a href="/nl/over-ons">Over Euroma en onze fabrieken</a>
+    </body></html>"""
+    urls = [j.url for j in parse_html_jobs(html, "https://www.euroma.com/nl/werkenbij", "Euroma")]
+    assert urls == ["https://www.euroma.com/nl/werkenbij/qa-officer",
+                    "https://www.euroma.com/nl/werkenbij/continuous-improvement-specialist"]

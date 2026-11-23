@@ -688,7 +688,7 @@ def fetch_sitemap(f: Fetcher, company: Company) -> list[Job]:
 
 # -------------------------------------------------------------- plain HTML
 JOBLINK_RE = re.compile(
-    r"(job|jobs|vacat|vacanc|position|opening|requisition|stelle|phd-project|/o/|/vacature|careers?[^/]*/[^/?]+/?(?:\?|$)|werken-bij[^/]*/[^/?]+/?(?:\?|$)|join-?us/[^/?]+/?(?:\?|$)|offres?-(?:d-?)?emplois?/[^/?]+/?(?:\?|$))",
+    r"(job|jobs|vacat|vacanc|position|opening|requisition|stelle|phd-project|/o/|/vacature|careers?[^/]*/[^/?]+/?(?:\?|$)|werken-?bij[^/]*/[^/?]+/?(?:\?|$)|join-?us/[^/?]+/?(?:\?|$)|offres?-(?:d-?)?emplois?/[^/?]+/?(?:\?|$))",
     re.I,
 )
 # "Read more" button text inside a job card link: "Ingénieur fiabilité Voir l'offre" -> the title
