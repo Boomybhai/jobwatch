@@ -1530,6 +1530,17 @@ def test_successfactors_reports_the_sitemap_error_not_the_sitemal_404():
     assert res.error and "503" in res.error and "sitemap.xml" in res.error
 
 
+def test_successfactors_not_a_feed_says_so_instead_of_the_sitemal_error():
+    # careers.allianz.com: /sitemap.xml is an ordinary sitemap, /sitemal.xml answers 500
+    class F(FakeFetcher):
+        def get(self, url, **kw):
+            self.calls.append(url)
+            if url.endswith("/sitemal.xml"):
+                raise RuntimeError("500 Server Error for " + url)
+            return type("R", (), {"text": "<urlset><url><loc>https://x/about</loc></url></urlset>", "url": url})()
+    res = check_company(F(), Company("AZ", "https://careers.allianz.com/", adapter="successfactors"))
+    assert res.error and "no SuccessFactors job feed" in res.error and "500" not in res.error
+
 def test_workday_keeps_earlier_pages_when_a_later_page_fails():
     class F(FakeFetcher):
         def post_json(self, url, payload):

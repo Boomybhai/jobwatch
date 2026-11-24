@@ -486,8 +486,10 @@ def fetch_successfactors(f: Fetcher, company: Company, max_jobs: int) -> list[Jo
         try:
             cand = BeautifulSoup(f.get(base + path).text, "xml")
         except Exception as exc:
-            # report the /sitemap.xml error: /sitemal.xml is only a fallback and 404s on most sites
-            first_exc = first_exc or exc
+            # report the /sitemap.xml error: /sitemal.xml is only a fallback and 404s/500s on most
+            # sites - if /sitemap.xml answered (just not with jobs), say "no feed" instead
+            if path == "/sitemap.xml":
+                first_exc = exc
             continue
         if cand.find("item") or any("/job/" in (l.get_text() or "") for l in cand.find_all("loc")[:2000]):
             soup = cand
