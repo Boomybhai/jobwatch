@@ -626,8 +626,9 @@ def title_from_url(url: str) -> str:
     return best[:1].upper() + best[1:]
 
 
-# the code may be followed by a language tag and .html: "…-29198-en-us.html" (Danone)
-_SLUG_ID_RE = re.compile(r"[-_]([A-Za-z0-9]{5,})(?:[-_][a-z]{2}[-_][a-z]{2})?(?:\.html?)?/?$")
+# the code may be followed by a short number ("…-ZFEAZ-3", TMC), a language tag and .html
+# ("…-29198-en-us.html", Danone)
+_SLUG_ID_RE = re.compile(r"[-_]([A-Za-z0-9]{5,})(?:-(\d{1,2}))?(?:[-_][a-z]{2}[-_][a-z]{2})?(?:\.html?)?/?$")
 _LANG_SEG_RE = re.compile(r"^([a-z]{2})(?:[-_][a-zA-Z]{2})?$")
 
 
@@ -636,9 +637,12 @@ def _slug_id(url: str) -> str:
     m = _SLUG_ID_RE.search(urlsplit(url).path)
     if not m:
         return ""
-    tok = m.group(1)
+    tok, num = m.group(1), m.group(2)
+    full = f"{tok}-{num}" if num else tok
     if re.search(r"\d", tok) or re.search(r"[a-z][A-Z]", tok):
-        return tok
+        return full
+    if num and tok.isupper():
+        return full  # an all-capitals code with a number after it: '…-ZFEAZ-3'
     return ""
 
 

@@ -299,6 +299,19 @@ def test_sitemap_keeps_one_link_per_translated_job():
     assert dedupe_translations(list(reversed(urls[:3]))) == [urls[1]]
 
 
+def test_sitemap_dedupes_capital_codes_with_a_number():
+    # TMC links end in an all-capitals code plus a number; the Italian copy is the same job
+    from jobwatch.adapters import dedupe_translations
+    urls = [
+        "https://www.themembercompany.com/it/carriere/ingegnere-di-supply-chain-ZFEAZ-3",
+        "https://www.themembercompany.com/careers/supply-chain-engineer-ZFEAZ-3",
+        "https://www.themembercompany.com/careers/traineeship-supply-chain-management-ZGEAZ-3",
+        "https://x.nl/jobs/PROCESS-ENGINEER", "https://x.nl/jobs/SAFETY-ENGINEER",  # words, no number
+        "https://x.nl/jobs/operator-12", "https://x.nl/jobs/engineer-12",
+    ]
+    assert dedupe_translations(urls) == urls[1:]
+
+
 def test_greenhouse_recruitee_smartrecruiters():
     f = FakeFetcher(json_by_url={
         "https://boards-api.greenhouse.io/v1/boards/avantium/jobs":
