@@ -64,7 +64,7 @@ def run(args: argparse.Namespace) -> int:
             result = check_company(fetcher, source, settings.max_jobs_per_api)
             if source.adapter == "workday" and result.error and "429" in result.error:
                 state.forget(company.name, "workday_last_try")  # throttled, not read -> next run
-            if (result.error or not result.jobs) and source.adapter != "html":
+            if _should_rediscover(company, source, result):
                 invalidate(cache)  # feed moved or broke -> look again next run
             if result.error:
                 streak = state.record_error(company.name, result.error)
@@ -304,6 +304,15 @@ def main(argv: list[str] | None = None) -> int:
         except EOFError:
             pass
     return code
+
+
+def _should_rediscover(company, source, result) -> bool:
+    """Look for the feed again next run? Yes when a job-system feed errors or comes back empty,
+    and when a page that discovery picked (not the one in companies.csv) errors - e.g. a single
+    job's page that discovery followed and that is now gone (404)."""
+    if source.adapter != "html":
+        return bool(result.error or not result.jobs)
+    return bool(result.error) and source.url.rstrip("/") != company.url.rstrip("/")
 
 
 def _throttled(fetcher, url: str) -> bool:

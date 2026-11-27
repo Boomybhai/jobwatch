@@ -2034,3 +2034,23 @@ def test_html_reads_banen_links():
     </body></html>"""
     urls = [j.url for j in parse_html_jobs(html, "https://werkenbij.stedin.net/", "Stedin")]
     assert urls == ["https://werkenbij.stedin.net/banen/rotterdam/senior-python-developer/3297/38397721216"]
+
+
+def test_rediscover_when_a_discovered_page_breaks():
+    """A page discovery picked (here a single job that has since gone: 404) is looked for again;
+    errors on the page from companies.csv and empty feeds behave as before."""
+    import dataclasses
+
+    from jobwatch.cli import _should_rediscover
+    from jobwatch.models import CheckResult
+
+    c = Company("Bio Base", "https://jobs.example.be/en")
+    moved = dataclasses.replace(c, adapter="html", url="https://jobs.example.be/en/environmental-engineer")
+    same = dataclasses.replace(c, adapter="html", url="https://jobs.example.be/en/")
+    feed = dataclasses.replace(c, adapter="recruitee", url="https://x.recruitee.com/")
+    err = lambda src: CheckResult(src, error="HTTPError: 404 Client Error", method="html")  # noqa: E731
+    assert _should_rediscover(c, moved, err(moved))
+    assert not _should_rediscover(c, same, err(same))           # the hand-picked page: keep it
+    assert not _should_rediscover(c, moved, CheckResult(moved))  # empty html page: no re-discovery each run
+    assert _should_rediscover(c, feed, CheckResult(feed))        # empty job-system feed: look again
+    assert not _should_rediscover(c, feed, CheckResult(feed, jobs=[Job(company="x", title="t", url="u", id="u")]))
