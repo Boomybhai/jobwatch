@@ -646,6 +646,17 @@ def _slug_id(url: str) -> str:
     return ""
 
 
+def _caps_code(url: str) -> str:
+    """A 5-letter all-capitals code after lower-case words ('…/ingegnere-della-supply-chain-ZFEAZ').
+
+    Weaker than _slug_id (it could be a word like 'SCADA'), so it is only used to drop a copy
+    of a job under a foreign-language section when the same code is also listed without one.
+    """
+    seg = urlsplit(url).path.rstrip("/").rsplit("/", 1)[-1]
+    m = re.fullmatch(r"([a-z0-9à-ÿ]+(?:-[a-z0-9à-ÿ]+)*)-([A-Z]{5})", seg)
+    return m.group(2) if m else ""
+
+
 def dedupe_translations(urls: list[str]) -> list[str]:
     """One link per job when a sitemap lists the same vacancy in several languages or sections.
 
@@ -667,7 +678,10 @@ def dedupe_translations(urls: list[str]) -> list[str]:
             if key not in best or rank(u) < rank(best[key]):
                 best[key] = u
     keep = set(best.values())
-    return [u for u in urls if not _slug_id(u) or u in keep]
+    out = [u for u in urls if not _slug_id(u) or u in keep]
+    # '/it/carriere/x-ZFEAZ' is the Italian copy of '/careers/y-ZFEAZ' (TMC)
+    plain = {(urlsplit(u).netloc.lower(), _caps_code(u)) for u in out if _caps_code(u) and not rank(u)[0]}
+    return [u for u in out if not (rank(u)[0] and (urlsplit(u).netloc.lower(), _caps_code(u)) in plain)]
 
 
 _DETAIL_SEG_RE = re.compile(r"^(?:job|jobs|vacancy|vacature|position|offre)[-_]?details?$", re.I)

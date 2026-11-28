@@ -1,5 +1,5 @@
 name,priority,group,url,enabled,adapter,render,link_type,note
-Air Liquide B.V.,High,"Energy, fuels & gases",https://nl.airliquide.com/over-ons/jobs/praktische-gids-voor-kandidaten,yes,auto,auto,Careers page (candidate guide),
+Air Liquide B.V.,High,"Energy, fuels & gases",https://nl.airliquide.com/over-ons/jobs/praktische-gids-voor-kandidaten,no,auto,auto,Careers page (candidate guide),"2026-11-28 paused: its jobs are on Workday, which blocks the GitHub runners (429 every run since Nov 24) - set enabled=yes to try again"
 Air Products Nederland B.V.,High,"Energy, fuels & gases",https://airproducts.wd5.myworkdayjobs.com/nl-NL/AP0001,no,auto,auto,Workday job board,2026-11-27 paused: Workday blocks the GitHub runners (429 every run since Nov 24) - set enabled=yes to try again
 AKZO Nobel Nederland B.V.,High,"Coatings, materials & composites",https://careers.akzonobel.com/,yes,auto,auto,Careers page (global — filter Netherlands),
 AquaBattery,High,Startups & scale-ups,https://aquabattery.com/career,yes,auto,auto,Careers page,
@@ -507,7 +507,7 @@ imec,Low,High-tech & semiconductors,https://www.imec-int.com/en/work-at-imec/job
 UCB (Belgium),Low,"Pharma, biotech & medtech",https://careers.ucb.com/global/en/search-results,yes,auto,auto,Careers page (global),"Belgium; found via Indeed BE search 2026-11-14 (bioprocess, Braine-l'Alleud)"
 Jan De Nul Group,Low,"Water, waste & circular",https://jobs.jandenul.com/jobs,yes,auto,auto,Job board,"Belgium; found via Indeed BE search 2026-11-14 (environmental & marine engineering, Aalst)"
 Kellanova (Belgium),Low,FMCG & food,https://jobs.kellanova.com/,yes,auto,auto,Careers page (global),"Belgium; found via Indeed BE search 2026-11-14 (Pringles process engineer, Mechelen)"
-AB InBev (Belgium),Low,FMCG & food,https://wd1.myworkdaysite.com/recruiting/abinbev/EUR,yes,workday,auto,Europe careers - Belgium,"Belgium; found via Indeed BE search 2026-11-14 (utilities, Leuven); 2026-11-16: europecareers page listed 0 jobs every run; its job links go to the abinbev EUR Workday site (NL/BE filter)"
+AB InBev (Belgium),Low,FMCG & food,https://wd1.myworkdaysite.com/recruiting/abinbev/EUR,no,workday,auto,Europe careers - Belgium,"Belgium; found via Indeed BE search 2026-11-14 (utilities, Leuven); 2026-11-16: europecareers page listed 0 jobs every run; its job links go to the abinbev EUR Workday site (NL/BE filter); 2026-11-28 paused: its jobs are on Workday, which blocks the GitHub runners (429 every run since Nov 24) - set enabled=yes to try again"
 Sweco Belgium,Medium,"Engineering, consulting & inspection",https://www.sweco.careers/belgium/,yes,auto,auto,Careers page (Belgium),Belgium; found via Indeed BE search 2026-11-14 (process engineering)
 Sanofi (Belgium),Medium,"Pharma, biotech & medtech",https://jobs.sanofi.com/en/belgium,yes,auto,auto,Careers page (Belgium),"added 2026-11-14 as a GSK competitor; Belgium (Geel biologics plant, Ghent, Diegem)"
 Amgen (Breda),Medium,"Pharma, biotech & medtech",https://careers.amgen.com/en/location/breda-jobs/87/2750405-2749990-2758401/4,yes,auto,auto,Careers page (Breda),"added 2026-11-14 as a GSK competitor; biologics manufacturing site, Breda"
